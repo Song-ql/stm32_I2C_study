@@ -1,0 +1,14 @@
+mcu_between_iic\stream_buffer.o: ../Middlewares/Third_Party/FreeRTOS/Source/stream_buffer.c
+mcu_between_iic\stream_buffer.o: D:\Soft\MDK\ARM\ARMCC\Bin\..\include\stdint.h
+mcu_between_iic\stream_buffer.o: D:\Soft\MDK\ARM\ARMCC\Bin\..\include\string.h
+mcu_between_iic\stream_buffer.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h
+mcu_between_iic\stream_buffer.o: D:\Soft\MDK\ARM\ARMCC\Bin\..\include\stddef.h
+mcu_between_iic\stream_buffer.o: ../Core/Inc/FreeRTOSConfig.h
+mcu_between_iic\stream_buffer.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h
+mcu_between_iic\stream_buffer.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/portable.h
+mcu_between_iic\stream_buffer.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/deprecated_definitions.h
+mcu_between_iic\stream_buffer.o: ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM3/portmacro.h
+mcu_between_iic\stream_buffer.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/mpu_wrappers.h
+mcu_between_iic\stream_buffer.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/task.h
+mcu_between_iic\stream_buffer.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/list.h
+mcu_between_iic\stream_buffer.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/stream_buffer.h

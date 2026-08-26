@@ -42,6 +42,6 @@ mcu_between_iic\freertos.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/t
 mcu_between_iic\freertos.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/queue.h
 mcu_between_iic\freertos.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/semphr.h
 mcu_between_iic\freertos.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/event_groups.h
-mcu_between_iic\freertos.o: ..\common\slave.h
+mcu_between_iic\freertos.o: ../common/slave.h
 mcu_between_iic\freertos.o: ../Core/Inc/i2c.h
-mcu_between_iic\freertos.o: ..\common\master.h
+mcu_between_iic\freertos.o: ../common/master.h

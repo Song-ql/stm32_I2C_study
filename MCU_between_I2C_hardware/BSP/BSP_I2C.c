@@ -20,11 +20,9 @@ void HAL_I2C_AddrCallback(I2C_HandleTypeDef *hi2c, uint8_t transferDirection, ui
         }
         else /* 主机接收 → 从机发送（读寄存器） */
         {
-            /* 读操作时，reg_ptr 已经在之前的写阶段被设置好了 */
-            /* 直接发送当前寄存器的值 */
             if (reg_ptr < REG_MAX)
             {
-                HAL_I2C_Slave_Seq_Transmit_IT(hi2c, &slave_reg[reg_ptr], 1, I2C_NEXT_FRAME);
+                HAL_I2C_Slave_Seq_Transmit_IT(hi2c, Reg_GetPtr(reg_ptr), 1, I2C_NEXT_FRAME);
             }
         }
     }
@@ -48,8 +46,8 @@ void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef *hi2c)
             reg_ptr = 0;
         }
 
-        /* 准备接收数据到 slave_reg[reg_ptr] */
-        HAL_I2C_Slave_Seq_Receive_IT(hi2c, &slave_reg[reg_ptr], 1, I2C_NEXT_FRAME);
+        /* 准备接收数据到当前寄存器（使用 switch-case 获取指针） */
+        HAL_I2C_Slave_Seq_Receive_IT(hi2c, Reg_GetPtr(reg_ptr), 1, I2C_NEXT_FRAME);
     }
     else /* SLAVE_STATE_DATA */
     {
@@ -59,7 +57,7 @@ void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef *hi2c)
             reg_ptr++;
         }
 
-        HAL_I2C_Slave_Seq_Receive_IT(hi2c, &slave_reg[reg_ptr], 1, I2C_NEXT_FRAME);
+        HAL_I2C_Slave_Seq_Receive_IT(hi2c, Reg_GetPtr(reg_ptr), 1, I2C_NEXT_FRAME);
     }
 }
 
@@ -70,13 +68,31 @@ void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef *hi2c)
  */
 void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef *hi2c)
 {
-    /* 当前寄存器发送完成，指针递增（支持连续读多个寄存器） */
-    if (reg_ptr < REG_MAX - 1)
+    /* 当前寄存器发送完成，指针递增（支持连续读多个寄存器）
+       读到最后一个寄存器后回绕到地址0，兼容主流传感器连续读行为 */
+    reg_ptr++;
+    if (reg_ptr >= REG_MAX)
     {
-        reg_ptr++;
+        reg_ptr = 0;
     }
 
-    HAL_I2C_Slave_Seq_Transmit_IT(hi2c, &slave_reg[reg_ptr], 1, I2C_NEXT_FRAME);
+    HAL_I2C_Slave_Seq_Transmit_IT(hi2c, Reg_GetPtr(reg_ptr), 1, I2C_NEXT_FRAME);
+}
+
+/**
+ * @brief I2C错误回调函数
+ * @param hi2c I2C句柄指针
+ * @retval None
+ *
+ * 主机读取结束发送NACK时，HAL会触发AF错误，此处重置状态并重新监听
+ */
+void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c)
+{
+    if (hi2c->Instance == I2C1)
+    {
+        slave_state = SLAVE_STATE_ADDR;
+        HAL_I2C_EnableListen_IT(hi2c);
+    }
 }
 
 /**
@@ -87,6 +103,6 @@ void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef *hi2c)
 void HAL_I2C_ListenCpltCallback(I2C_HandleTypeDef *hi2c)
 {
     /* 一次通信结束，重置状态，重新开启监听 */
-    slave_state = SLAVE_STATE_ADDR;
+    slave_state  = SLAVE_STATE_ADDR;
     HAL_I2C_EnableListen_IT(hi2c);
 }

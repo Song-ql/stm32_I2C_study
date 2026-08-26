@@ -30,4 +30,4 @@ mcu_between_iic\bsp_i2c.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c
 mcu_between_iic\bsp_i2c.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h
 mcu_between_iic\bsp_i2c.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 mcu_between_iic\bsp_i2c.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
-mcu_between_iic\bsp_i2c.o: ..\common\slave.h
+mcu_between_iic\bsp_i2c.o: ../common/slave.h

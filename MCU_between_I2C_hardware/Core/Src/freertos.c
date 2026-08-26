@@ -128,15 +128,13 @@ void MX_FREERTOS_Init(void) {
 void Master_Task(void const * argument)
 {
   /* USER CODE BEGIN Master_Task */
-  uint16_t temperature; /* 模拟温度原始值 */
-  uint16_t humidity;    /* 模拟湿度原始值 */
-  uint8_t  status;      /* 模拟状态寄存器值 */
+	
   /* Infinite loop */
   for(;;)
   {
     /* 1. 读取从机ID，校验通信是否正常 */
-    id = Master_ReadID();
-    if (id != 0xAB)
+    Master_SetID(Master_ReadID());
+    if (Master_GetID() != 0xAB)
     {
       /* ID校验失败，通信异常，等待后重试 */
       osDelay(100);
@@ -144,8 +142,8 @@ void Master_Task(void const * argument)
     }
 
     /* 2. 读取状态寄存器，判断从机是否就绪 */
-    status = Master_ReadStatus();
-    if ((status & 0x01) == 0x00)
+    Master_SetStatus(Master_ReadStatus());
+    if ((Master_GetStatus() & 0x01) == 0x00)
     {
       /* 从机未就绪，等待后重试 */
       osDelay(10);
@@ -159,10 +157,10 @@ void Master_Task(void const * argument)
     osDelay(5);
 
     /* 4. 按寄存器地址连续读取温度（高8位+低8位） */
-    temperature = Master_ReadTemperature();
+    Master_SetTemp(Master_ReadTemperature());
 
     /* 5. 按寄存器地址连续读取湿度（高8位+低8位） */
-    humidity = Master_ReadHumidity();
+    Master_SetHum(Master_ReadHumidity());
 
     /* 6. 此处可将 temperature / humidity 发送到串口、OLED 等
        例如: printf("Temp=%d, Hum=%d\r\n", temperature, humidity); */
@@ -188,27 +186,46 @@ void Slave_Task(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-    /* 模拟传感器数据更新：将数据写入从机寄存器数组
+    /* 模拟传感器数据更新：将数据写入从机寄存器
        主机通过 I2C 按寄存器地址即可读到这些值 */
 
-    /* 更新温度寄存器（高8位 + 低8位） */
-    slave_reg[REG_TEMP_H] = (uint8_t)(sim_temp >> 8);
-    slave_reg[REG_TEMP_L] = (uint8_t)(sim_temp & 0xFF);
+    /* 更新温度寄存器（高8位 + 低8位）- 使用 switch-case 寻址 */
+    Reg_Write(REG_TEMP_H, (uint8_t)(sim_temp >> 8));
+    Reg_Write(REG_TEMP_L, (uint8_t)(sim_temp & 0xFF));
 
-    /* 更新湿度寄存器（高8位 + 低8位） */
-    slave_reg[REG_HUM_H] = (uint8_t)(sim_hum >> 8);
-    slave_reg[REG_HUM_L] = (uint8_t)(sim_hum & 0xFF);
+    /* 更新湿度寄存器（高8位 + 低8位）- 使用 switch-case 寻址 */
+    Reg_Write(REG_HUM_H, (uint8_t)(sim_hum >> 8));
+    Reg_Write(REG_HUM_L, (uint8_t)(sim_hum & 0xFF));
 
     /* 模拟数据缓慢变化，便于观察主机读取效果 */
     sim_temp += 1;
     sim_hum  += 2;
 
-    /* 每10次更新翻转状态寄存器的就绪标志，测试主机状态判断逻辑 */
+    /* REG_STATUS 就绪标志翻转：受 REG_CTRL 控制
+       REG_CTRL 定义：
+         bit0     : 翻转使能 (1=允许翻转, 0=禁止翻转)
+         bit7~bit1: 翻转周期 = (bit7~bit1) + 1 次循环
+       示例：
+         REG_CTRL = 0x00 → 禁止翻转
+         REG_CTRL = 0x01 → 每 1 次循环翻转 1 次
+         REG_CTRL = 0x13 → 每(0x09+1)=10 次循环翻转 1 次（兼容原默认行为） */
     cnt++;
-    if (cnt >= 10)
     {
-      cnt = 0;
-      slave_reg[REG_STATUS] ^= 0x01;
+      uint8_t ctrl = Reg_Read(REG_CTRL);
+      uint8_t enable  = ctrl & 0x01;
+      uint8_t period  = (ctrl >> 1) + 1;  /* 翻转周期：1 ~ 128 */
+
+      if (enable && (cnt >= period))
+      {
+        cnt = 0;
+        /* 使用 switch-case 读写：先读后写，实现异或翻转 */
+        Reg_Write(REG_STATUS, Reg_Read(REG_STATUS) ^ 0x01);
+      }
+      else if (!enable)
+      {
+        /* 翻转禁止时，计数器不累积 */
+        cnt = 0;
+      }
     }
 
     osDelay(100);

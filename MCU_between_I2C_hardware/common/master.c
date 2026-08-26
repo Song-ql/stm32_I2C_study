@@ -1,21 +1,18 @@
 #include "master.h"
 
-uint8_t id;       /* 主机读取的从机ID */
-uint8_t temp[2];  /* 温度数据缓冲区 [高8位, 低8位] */
-uint8_t hum[2];   /* 湿度数据缓冲区 [高8位, 低8位] */
-
+static MasterData_t master_data;
 /**
  * @brief 向从机写入单个寄存器
- * @param reg   寄存器地址 (使用 SlaveReg_t 枚举)
+ * @param reg   寄存器地址 (使用 MasterReg_t 枚举)
  * @param value 要写入的值
  * @retval None
  *
  * 通信时序:
  *   S + ADDR(W) + REG_ADDR + DATA + P
  */
-void Slave_WriteReg(uint8_t reg, uint8_t value)
+void Master_WriteReg(uint8_t reg, uint8_t value)
 {
-    HAL_I2C_Mem_Write(&hi2c1,
+    HAL_I2C_Mem_Write(&hi2c2,
                       SLAVE_ADDR << 1,
                       reg,
                       I2C_MEMADD_SIZE_8BIT,
@@ -26,16 +23,16 @@ void Slave_WriteReg(uint8_t reg, uint8_t value)
 
 /**
  * @brief 从从机读取单个寄存器
- * @param reg  寄存器地址 (使用 SlaveReg_t 枚举)
+ * @param reg  寄存器地址 (使用 MasterReg_t 枚举)
  * @return uint8_t 读取到的值
  *
  * 通信时序:
  *   S + ADDR(W) + REG_ADDR + Sr + ADDR(R) + DATA + P
  */
-uint8_t Slave_ReadReg(uint8_t reg)
+uint8_t Master_ReadReg(uint8_t reg)
 {
     uint8_t value;
-    HAL_I2C_Mem_Read(&hi2c1,
+    HAL_I2C_Mem_Read(&hi2c2,
                      SLAVE_ADDR << 1,
                      reg,
                      I2C_MEMADD_SIZE_8BIT,
@@ -56,9 +53,9 @@ uint8_t Slave_ReadReg(uint8_t reg)
  *   S + ADDR(W) + START_REG + Sr + ADDR(R) + DATA0 + DATA1 + ... + P
  * 从机收到首地址后自动递增指针，连续返回数据
  */
-void Slave_ReadRegs(uint8_t start_reg, uint8_t *buf, uint8_t len)
+void Master_ReadRegs(uint8_t start_reg, uint8_t *buf, uint8_t len)
 {
-    HAL_I2C_Mem_Read(&hi2c1,
+    HAL_I2C_Mem_Read(&hi2c2,
                      SLAVE_ADDR << 1,
                      start_reg,
                      I2C_MEMADD_SIZE_8BIT,
@@ -72,13 +69,16 @@ void Slave_ReadRegs(uint8_t start_reg, uint8_t *buf, uint8_t len)
  * ============================================================ */
 
 /**
- * @brief 读取从机ID并校验
- * @return uint8_t 读取到的ID值，0xFF表示通信失败
+ * @brief 读取从机ID
+ * @return uint8_t 读取到的ID值
+ *
+ * 从机ID寄存器具有自增特性：每次被读取后值递增1
+ * 起始值为0xAB，依次返回 0xAB, 0xAC, 0xAD, ... 溢出后回绕到0x00
  */
 uint8_t Master_ReadID(void)
 {
-    id = Slave_ReadReg(REG_ID);
-    /* 从机初始化时设置 ID = 0x5A，这里可以做校验 */
+    int id = 0;
+    id = Master_ReadReg(REG_ID);
     return id;
 }
 
@@ -91,7 +91,8 @@ uint8_t Master_ReadID(void)
  */
 uint16_t Master_ReadTemperature(void)
 {
-    Slave_ReadRegs(REG_TEMP_H, temp, 2);
+    uint8_t temp[2];
+    Master_ReadRegs(REG_TEMP_H, temp, 2);
     return (uint16_t)((temp[0] << 8) | temp[1]);
 }
 
@@ -101,17 +102,9 @@ uint16_t Master_ReadTemperature(void)
  */
 uint16_t Master_ReadHumidity(void)
 {
-    Slave_ReadRegs(REG_HUM_H, hum, 2);
+    uint8_t hum[2];
+    Master_ReadRegs(REG_HUM_H, hum, 2);
     return (uint16_t)((hum[0] << 8) | hum[1]);
-}
-
-/**
- * @brief 写控制寄存器
- * @param value 控制字
- */
-void Master_WriteCtrl(uint8_t value)
-{
-    Slave_WriteReg(REG_CTRL, value);
 }
 
 /**
@@ -120,58 +113,135 @@ void Master_WriteCtrl(uint8_t value)
  */
 uint8_t Master_ReadStatus(void)
 {
-    return Slave_ReadReg(REG_STATUS);
+    return Master_ReadReg(REG_STATUS);
+}
+
+/**
+ * @brief 读控制寄存器
+ * @return uint8_t 控制位值
+ */
+uint8_t Master_ReadCtrl(void)
+{
+    return Master_ReadReg(REG_CTRL);
+}
+
+/**
+ * @brief 写控制寄存器
+ * @param value 控制位值
+ *
+ * REG_CTRL 格式:
+ *   bit0     : 状态翻转使能 (1=允许翻转, 0=禁止翻转)
+ *   bit7~bit1: 翻转周期 = (bit7~bit1) + 1 次循环 (范围: 1 ~ 128)
+ *
+ * 示例:
+ *   Master_WriteCtrl(0x00) → 禁止翻转
+ *   Master_WriteCtrl(0x01) → 每 1 次循环翻转 1 次
+ *   Master_WriteCtrl(0x13) → 每 10 次循环翻转 1 次
+ */
+void Master_WriteCtrl(uint8_t value)
+{
+    Master_WriteReg(REG_CTRL, value);
 }
 
 /* ============================================================
- * 综合测试示例：演示如何按寄存器地址进行读写操作
+ * 数据获取和设置函数
  * ============================================================ */
 
 /**
- * @brief 主机读写综合测试函数
- *        在主循环中调用此函数即可测试完整读写流程
- * @retval None
- */
-void Master_Test(void)
+ * @brief 读取主机数据结构体
+ * @return MasterData_t 主机数据结构体
+*/
+MasterData_t Master_GetData(void)
 {
-    uint8_t  status;
-    uint16_t temperature;
-    uint16_t humidity;
+    return master_data;
+}
 
-    /* ---------- 1. 读取从机ID，确认通信正常 ---------- */
-    id = Master_ReadID();
-    if (id != 0xAB)
-    {
-        /* ID不匹配，通信异常处理 */
-        return;
-    }
+/**
+ * @brief 读取当前从机ID
+ * @return uint8_t 当前从机ID值
+ */
+uint8_t Master_GetID(void)
+{
+    return master_data.id;
+}
 
-    /* ---------- 2. 读取状态寄存器 ---------- */
-    status = Master_ReadStatus();
-    if ((status & 0x01) == 0x00)
-    {
-        /* 从机未就绪 */
-        return;
-    }
+/**
+ * @brief 读取当前温度值（16位）
+ * @return uint16_t 当前温度值值
+ */
+uint16_t Master_GetTemp(void)
+{
+    return master_data.temp;
+}
 
-    /* ---------- 3. 写控制寄存器：启动一次测量 ---------- */
-    Master_WriteCtrl(0x01); /* bit0 = 1 启动测量 */
+/**
+ * @brief 读取当前湿度值（16位）
+ * @return uint16_t 当前湿度值值
+ */
+uint16_t Master_GetHum(void)
+{
+    return master_data.hum;
+}
 
-    /* 等待测量完成（实际项目中可以用中断或超时判断） */
-    HAL_Delay(10);
+/**
+ * @brief 读取当前控制位值
+ * @return uint8_t 当前控制位值
+ */
+uint8_t Master_GetCtrl(void)
+{
+    return master_data.ctrl;
+}
 
-    /* ---------- 4. 按寄存器地址单独读取 ---------- */
-    /* 方式一：逐个读取单寄存器 */
-    temp[0] = Slave_ReadReg(REG_TEMP_H);
-    temp[1] = Slave_ReadReg(REG_TEMP_L);
-    temperature = (uint16_t)((temp[0] << 8) | temp[1]);
+/**
+ * @brief 读取当前状态值
+ * @return uint8_t 当前状态值
+ */
+uint8_t Master_GetStatus(void)
+{
+    return master_data.status;
+}
 
-    /* ---------- 5. 按起始地址连续读取 ---------- */
-    /* 方式二：从 REG_HUM_H 开始连续读 2 个寄存器 */
-    Slave_ReadRegs(REG_HUM_H, hum, 2);
-    humidity = (uint16_t)((hum[0] << 8) | hum[1]);
+/**
+ * @brief 设置从机ID
+ * @param id 从机ID值
+ */
+void Master_SetID(uint8_t id)
+{
+    master_data.id = id;
+}
 
-    /* ---------- 6. 结果使用示例 ---------- */
-    /* 这里可以将 temperature 和 humidity 发送到串口、OLED 等 */
-    /* 例如：printf("温度=%d, 湿度=%d\r\n", temperature, humidity); */
+/**
+ * @brief 设置温度值（16位）
+ * @param temp 温度原始值 (REG_TEMP_H << 8 | REG_TEMP_L)
+ */
+void Master_SetTemp(uint16_t temp)
+{
+    master_data.temp = temp;
+}
+
+/**
+ * @brief 设置湿度值（16位）
+ * @param hum 湿度原始值 (REG_HUM_H << 8 | REG_HUM_L)
+ */
+void Master_SetHum(uint16_t hum)
+{
+    master_data.hum = hum;
+}
+
+/**
+ * @brief 设置控制位值
+ * @param ctrl 控制位值
+ */
+void Master_SetCtrl(uint8_t ctrl)
+{
+    master_data.ctrl = ctrl;
+}
+
+/**
+ * @brief 设置状态值
+ * @param status 状态值
+ */
+void Master_SetStatus(uint8_t status)
+{
+    master_data.status = status;
 }

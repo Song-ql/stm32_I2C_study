@@ -44,5 +44,5 @@ mcu_between_iic\main.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/semph
 mcu_between_iic\main.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/event_groups.h
 mcu_between_iic\main.o: ../Core/Inc/i2c.h
 mcu_between_iic\main.o: ../Core/Inc/gpio.h
-mcu_between_iic\main.o: ..\common\slave.h
-mcu_between_iic\main.o: ..\common\master.h
+mcu_between_iic\main.o: ../common/slave.h
+mcu_between_iic\main.o: ../common/master.h

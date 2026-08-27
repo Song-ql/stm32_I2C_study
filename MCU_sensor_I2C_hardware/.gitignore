@@ -1,0 +1,39 @@
+# STM32CubeMX
+.mxproject
+*.ioc.bak
+
+# Keil MDK-ARM 用户/调试/编译产物
+*.uvoptx
+*.uvguix.*
+*.uvguix_*
+Objects/
+Listings/
+*.o
+*.d
+*.crf
+*.lnp
+*.dep
+*.axf
+*.hex
+*.bin
+*.elf
+*.map
+*.lst
+*.htm
+*.build_log.htm
+*.bak
+*.log
+
+# 编译/构建目录
+Debug/
+Release/
+build/
+obj/
+out/
+
+# 系统/编辑器
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp

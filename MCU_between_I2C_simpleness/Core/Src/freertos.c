@@ -131,14 +131,73 @@ void MX_FREERTOS_Init(void) {
 void Master_Task(void const * argument)
 {
   /* USER CODE BEGIN Master_Task */
-	memset(g_master_buffer.tx_buf, 0, BSP_MASTER_IIC_BUF_SIZE);
-	g_master_buffer.tx_buf[0] = 1;
-	g_master_buffer.tx_buf[1] = 1;
-  /* Infinite loop: 周期性向从机发数据 */
+	TimeData_t master_time = {2026, 8, 27, 12, 0, 0};
+	uint8_t ret;
+	uint32_t wait_start;
+  /* Infinite loop: 周期性发送时间到从机, 并读取从机传感器数据 */
   for(;;)
   {
-    Master_SendData();
-    osDelay(10);
+    /* 主机发送时间到从机 */
+    ret = Master_SendTime(&master_time);
+    if (ret == 0U)
+    {
+      printf("[Master] Send Time: %04u-%02u-%02u %02u:%02u:%02u\r\n",
+             master_time.year, master_time.month, master_time.day,
+             master_time.hour, master_time.minute, master_time.second);
+    }
+    else
+    {
+      printf("[Master] Send Time FAILED\r\n");
+    }
+
+    /* 时间自增 (每秒 +1 秒, 简化处理) */
+    master_time.second++;
+    if (master_time.second >= 60)
+    {
+      master_time.second = 0;
+      master_time.minute++;
+      if (master_time.minute >= 60)
+      {
+        master_time.minute = 0;
+        master_time.hour++;
+        if (master_time.hour >= 24)
+        {
+          master_time.hour = 0;
+        }
+      }
+    }
+
+    osDelay(500);
+
+    /* 主机读取从机温湿度、光照强度 (中断接收方式) */
+    ret = Master_ReadSensor();
+    if (ret == 0U)
+    {
+      /* 轮询等待中断接收完成, 超时 1000ms */
+      wait_start = HAL_GetTick();
+      while ((g_master_rx_done == 0U) && ((HAL_GetTick() - wait_start) < 1000U))
+      {
+        osDelay(1);
+      }
+
+      if (g_master_rx_done != 0U)
+      {
+        printf("[Master] Read Sensor: Temp=%d.%d C, Humi=%d.%d %%, Light=%d lux\r\n",
+               g_master_sensor.temperature / 10, g_master_sensor.temperature % 10,
+               g_master_sensor.humidity / 10, g_master_sensor.humidity % 10,
+               g_master_sensor.light);
+      }
+      else
+      {
+        printf("[Master] Read Sensor TIMEOUT\r\n");
+      }
+    }
+    else
+    {
+      printf("[Master] Read Sensor FAILED\r\n");
+    }
+
+    osDelay(500);
   }
   /* USER CODE END Master_Task */
 }
@@ -154,11 +213,22 @@ void Slave_Task(void const * argument)
 {
   /* USER CODE BEGIN Slave_Task */
 
-  /* Infinite loop: 轮询接收完成标志, 处理主机发来的数据 */
+  /* Infinite loop: 更新模拟传感器数据, 打印接收到的时间和当前传感器值 */
   for(;;)
   {
-		printf("%d   %d\r\n", g_slave_buffer.pRx_buf[0], g_slave_buffer.pRx_buf[1]);
-    osDelay(10);
+    /* 更新从机模拟传感器数据 */
+    Slave_UpdateSensor();
+
+    /* 打印从机接收到的主机时间 */
+    printf("[Slave]  Recv Time: %04u-%02u-%02u %02u:%02u:%02u | "
+           "Temp=%d.%d C, Humi=%d.%d %%, Light=%d lux\r\n",
+           g_slave_time.year, g_slave_time.month, g_slave_time.day,
+           g_slave_time.hour, g_slave_time.minute, g_slave_time.second,
+           g_slave_sensor.temperature / 10, g_slave_sensor.temperature % 10,
+           g_slave_sensor.humidity / 10, g_slave_sensor.humidity % 10,
+           g_slave_sensor.light);
+
+    osDelay(1000);
   }
   /* USER CODE END Slave_Task */
 }

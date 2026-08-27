@@ -8,14 +8,14 @@ study\master.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h
 study\master.o: ../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h
 study\master.o: ../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h
 study\master.o: ../Drivers/CMSIS/Include/core_cm3.h
-study\master.o: D:\Soft\MDK\ARM\ARMCC\Bin\..\include\stdint.h
+study\master.o: E:\keil\core\ARM\ARMCC\Bin\..\include\stdint.h
 study\master.o: ../Drivers/CMSIS/Include/cmsis_version.h
 study\master.o: ../Drivers/CMSIS/Include/cmsis_compiler.h
 study\master.o: ../Drivers/CMSIS/Include/cmsis_armcc.h
 study\master.o: ../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h
 study\master.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h
 study\master.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h
-study\master.o: D:\Soft\MDK\ARM\ARMCC\Bin\..\include\stddef.h
+study\master.o: E:\keil\core\ARM\ARMCC\Bin\..\include\stddef.h
 study\master.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h
 study\master.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h
 study\master.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h
@@ -32,3 +32,4 @@ study\master.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 study\master.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
 study\master.o: ../BSP/BSP_IIC.h
 study\master.o: ../Core/Inc/i2c.h
+study\master.o: E:\keil\core\ARM\ARMCC\Bin\..\include\string.h

@@ -1,7 +1,7 @@
 study\freertos.o: ../Core/Src/freertos.c
 study\freertos.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h
-study\freertos.o: D:\Soft\MDK\ARM\ARMCC\Bin\..\include\stddef.h
-study\freertos.o: D:\Soft\MDK\ARM\ARMCC\Bin\..\include\stdint.h
+study\freertos.o: E:\keil\core\ARM\ARMCC\Bin\..\include\stddef.h
+study\freertos.o: E:\keil\core\ARM\ARMCC\Bin\..\include\stdint.h
 study\freertos.o: ../Core/Inc/FreeRTOSConfig.h
 study\freertos.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h
 study\freertos.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/portable.h
@@ -47,7 +47,7 @@ study\freertos.o: ../equipment/master.h
 study\freertos.o: ../BSP/BSP_IIC.h
 study\freertos.o: ../equipment/slave.h
 study\freertos.o: ../Core/Inc/i2c.h
-study\freertos.o: D:\Soft\MDK\ARM\ARMCC\Bin\..\include\string.h
+study\freertos.o: E:\keil\core\ARM\ARMCC\Bin\..\include\string.h
 study\freertos.o: ../BSP/BSP_UART.h
 study\freertos.o: ../Core/Inc/usart.h
-study\freertos.o: D:\Soft\MDK\ARM\ARMCC\Bin\..\include\stdio.h
+study\freertos.o: E:\keil\core\ARM\ARMCC\Bin\..\include\stdio.h

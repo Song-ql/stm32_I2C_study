@@ -19,7 +19,7 @@ void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c)
 }
 
 /* I2C2 地址匹配: 监听模式下根据主机方向启动接收或发送
- * 必须用 Slave_Seq_xxx_IT (此时 state 为 LISTEN, 普通版本要求 READY) */
+ * 必须用 Slave_Seq_xxx_DMA (此时 state 为 LISTEN, 普通版本要求 READY) */
 void HAL_I2C_AddrCallback(I2C_HandleTypeDef *hi2c, uint8_t TransferDirection, uint16_t AddrMatchCode)
 {
     UNUSED(AddrMatchCode);
@@ -28,15 +28,15 @@ void HAL_I2C_AddrCallback(I2C_HandleTypeDef *hi2c, uint8_t TransferDirection, ui
     {
         if (TransferDirection == I2C_DIRECTION_TRANSMIT)
         {
-            HAL_I2C_Slave_Seq_Receive_IT(hi2c, g_slave_buffer.rx_buf,
-                                         sizeof(g_slave_buffer.rx_buf),
-                                         I2C_FIRST_AND_LAST_FRAME);
+            HAL_I2C_Slave_Seq_Receive_DMA(hi2c, g_slave_buffer.rx_buf,
+                                          sizeof(g_slave_buffer.rx_buf),
+                                          I2C_FIRST_AND_LAST_FRAME);
         }
         else
         {
-            HAL_I2C_Slave_Seq_Transmit_IT(hi2c, g_slave_buffer.tx_buf,
-                                          sizeof(g_slave_buffer.tx_buf),
-                                          I2C_FIRST_AND_LAST_FRAME);
+            HAL_I2C_Slave_Seq_Transmit_DMA(hi2c, g_slave_buffer.tx_buf,
+                                           sizeof(g_slave_buffer.tx_buf),
+                                           I2C_FIRST_AND_LAST_FRAME);
         }
     }
 }

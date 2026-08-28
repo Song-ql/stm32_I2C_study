@@ -14,7 +14,7 @@ typedef struct
 /* 主机数据缓冲区 */
 extern MasterBuffer_t g_master_buffer;
 
-/* 主机中断接收完成标志 */
+/* 主机 DMA 接收完成标志 */
 extern volatile uint8_t g_master_rx_done;
 
 /* 主机解析后的传感器数据 */
@@ -26,7 +26,7 @@ extern SensorData_t g_master_sensor;
  */
 uint8_t Master_SendTime(const TimeData_t *pTime);
 
-/* 主机读取从机传感器数据 (中断接收)
+/* 主机读取从机传感器数据 (DMA接收)
  * 返回: 0 = 成功启动, 1 = 失败
  * 注意: 需轮询 g_master_rx_done, 完成后调用 Master_ParseSensor 解析。
  */

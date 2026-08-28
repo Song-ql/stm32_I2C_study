@@ -24,7 +24,7 @@ extern SensorData_t g_slave_sensor;
 /* 从机 I2C 监听模式需要恢复的标志 (由中断置位, 任务清除) */
 extern volatile uint8_t g_slave_i2c_need_recover;
 
-/* 从机接收完成标志 (中断置位, 任务清除) */
+/* 从机 DMA 接收完成标志 (中断置位, 任务清除) */
 extern volatile uint8_t g_slave_rx_done;
 
 /* 从机初始化 */

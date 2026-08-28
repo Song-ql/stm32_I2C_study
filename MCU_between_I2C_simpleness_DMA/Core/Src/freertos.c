@@ -167,10 +167,10 @@ void Master_Task(void const * argument)
 
     osDelay(500);
 
-    /* 主机读取从机温湿度、光照强度 (中断接收方式) */
+    /* 主机读取从机温湿度、光照强度 (DMA接收方式) */
     if (Master_ReadSensor() == 0)
     {
-      /* 轮询等待中断接收完成, 超时 1000ms */
+      /* 轮询等待DMA接收完成, 超时 1000ms */
       wait_start = HAL_GetTick();
       while ((g_master_rx_done == 0) && ((HAL_GetTick() - wait_start) < 1000))
       {

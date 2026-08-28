@@ -1,4 +1,5 @@
 #include "slave.h"
+#include "BSP_UART.h"
 
 SlaveBuffer_t g_slave_buffer;
 
@@ -35,7 +36,15 @@ void Slave_RecoverI2C(void)
  */
 void Slave_UpdateSensor(void)
 {
-    uint32_t tick = HAL_GetTick();
+    uint32_t tick;
+
+    /* I2C 正在向主机发送 tx_buf 时跳过本次更新, 避免传输中改写数据 */
+    if (hi2c2.State == HAL_I2C_STATE_BUSY_TX_LISTEN)
+    {
+        return;
+    }
+
+    tick = HAL_GetTick();
 
     /* 温度: 20.0 ~ 30.0 °C (x10 -> 200 ~ 300) */
     g_slave_sensor.temperature = (int16_t)(200 + (tick % 101));
@@ -48,6 +57,10 @@ void Slave_UpdateSensor(void)
 
     /* 打包到发送缓冲区, 供主机读事务直接发送 */
     Slave_PackSensor(&g_slave_sensor, g_slave_buffer.tx_buf);
+		printf("[Slave] Send Sensor: Temp=%d.%d C, Humi=%d.%d %%, Light=%d lux\r\n",
+					 g_slave_sensor.temperature / 10, g_slave_sensor.temperature % 10,
+           g_slave_sensor.humidity / 10, g_slave_sensor.humidity % 10,
+           g_slave_sensor.light);
 }
 
 /* 将时间数据从 buf 解析到 out (小端序)
@@ -63,7 +76,11 @@ void Slave_ParseTime(const uint8_t *buf, TimeData_t *out)
     out->second = buf[6];
 }
 
-/* 将传感器数据从 sensor 打包到 buf (小端序) */
+/* 将传感器数据从 sensor 打包到 buf (小端序)
+ * 格式: [T_lo][T_hi][H_lo][H_hi][L_lo][L_hi][sum][pad]
+ * sum = 前 6 字节累加取低 8 位; pad 为填充字节, 占据帧尾,
+ * 使主机 HAL 最后两字节背靠背读的重复损坏只落在填充位。
+ */
 void Slave_PackSensor(const SensorData_t *sensor, uint8_t *buf)
 {
     buf[0] = (uint8_t)(sensor->temperature & 0xFF);
@@ -72,4 +89,6 @@ void Slave_PackSensor(const SensorData_t *sensor, uint8_t *buf)
     buf[3] = (uint8_t)(sensor->humidity >> 8);
     buf[4] = (uint8_t)(sensor->light & 0xFF);
     buf[5] = (uint8_t)(sensor->light >> 8);
+    buf[6] = (uint8_t)(buf[0] + buf[1] + buf[2] + buf[3] + buf[4] + buf[5]);
+    buf[7] = 0xA5;
 }

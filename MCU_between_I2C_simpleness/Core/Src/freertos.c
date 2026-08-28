@@ -179,11 +179,26 @@ void Master_Task(void const * argument)
 
       if (g_master_rx_done != 0)
       {
-        Master_ParseSensor(g_master_buffer.rx_buf, &g_master_sensor);
-        printf("[Master] Read Sensor: Temp=%d.%d C, Humi=%d.%d %%, Light=%d lux\r\n",
-               g_master_sensor.temperature / 10, g_master_sensor.temperature % 10,
-               g_master_sensor.humidity / 10, g_master_sensor.humidity % 10,
-               g_master_sensor.light);
+        /* 解析并校验传感器帧 (帧尾校验和) */
+        if (Master_ParseSensor(g_master_buffer.rx_buf, &g_master_sensor) == 0)
+        {
+          /* 光照合法范围兜底校验 (从机生成范围 0 ~ 999) */
+          if ((g_master_sensor.light >= 0) && (g_master_sensor.light <= 999))
+          {
+            printf("[Master] Read Sensor: Temp=%d.%d C, Humi=%d.%d %%, Light=%d lux\r\n",
+                   g_master_sensor.temperature / 10, g_master_sensor.temperature % 10,
+                   g_master_sensor.humidity / 10, g_master_sensor.humidity % 10,
+                   g_master_sensor.light);
+          }
+          else
+          {
+            printf("[Master] Sensor data INVALID, dropped\r\n");
+          }
+        }
+        else
+        {
+          printf("[Master] Sensor CHECKSUM ERROR, dropped\r\n");
+        }
       }
       else
       {
@@ -228,13 +243,9 @@ void Slave_Task(void const * argument)
     }
 
     /* 打印从机接收到的主机时间 */
-    printf("[Slave]  Recv Time: %04u-%02u-%02u %02u:%02u:%02u | "
-           "Temp=%d.%d C, Humi=%d.%d %%, Light=%d lux\r\n",
+    printf("[Slave]  Recv Time: %04u-%02u-%02u %02u:%02u:%02u\r\n",
            g_slave_time.year, g_slave_time.month, g_slave_time.day,
-           g_slave_time.hour, g_slave_time.minute, g_slave_time.second,
-           g_slave_sensor.temperature / 10, g_slave_sensor.temperature % 10,
-           g_slave_sensor.humidity / 10, g_slave_sensor.humidity % 10,
-           g_slave_sensor.light);
+           g_slave_time.hour, g_slave_time.minute, g_slave_time.second);
 
     osDelay(1000);
   }

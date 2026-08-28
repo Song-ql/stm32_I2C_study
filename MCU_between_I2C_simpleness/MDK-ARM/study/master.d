@@ -32,3 +32,4 @@ study\master.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 study\master.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
 study\master.o: ../BSP/BSP_IIC.h
 study\master.o: ../Core/Inc/i2c.h
+study\master.o: E:\keil\core\ARM\ARMCC\Bin\..\include\string.h

@@ -132,12 +132,21 @@ void Master_Task(void const * argument)
 {
   /* USER CODE BEGIN Master_Task */
 	TimeData_t master_time = {2026, 8, 27, 12, 0, 0};
+<<<<<<< HEAD
+=======
+	uint8_t ret;
+>>>>>>> origin/develop
 	uint32_t wait_start;
   /* Infinite loop: 周期性发送时间到从机, 并读取从机传感器数据 */
   for(;;)
   {
     /* 主机发送时间到从机 */
+<<<<<<< HEAD
     if (Master_SendTime(&master_time) == 0)
+=======
+    ret = Master_SendTime(&master_time);
+    if (ret == 0U)
+>>>>>>> origin/develop
     {
       printf("[Master] Send Time: %04u-%02u-%02u %02u:%02u:%02u\r\n",
              master_time.year, master_time.month, master_time.day,
@@ -168,18 +177,32 @@ void Master_Task(void const * argument)
     osDelay(500);
 
     /* 主机读取从机温湿度、光照强度 (中断接收方式) */
+<<<<<<< HEAD
     if (Master_ReadSensor() == 0)
     {
       /* 轮询等待中断接收完成, 超时 1000ms */
       wait_start = HAL_GetTick();
       while ((g_master_rx_done == 0) && ((HAL_GetTick() - wait_start) < 1000))
+=======
+    ret = Master_ReadSensor();
+    if (ret == 0U)
+    {
+      /* 轮询等待中断接收完成, 超时 1000ms */
+      wait_start = HAL_GetTick();
+      while ((g_master_rx_done == 0U) && ((HAL_GetTick() - wait_start) < 1000U))
+>>>>>>> origin/develop
       {
         osDelay(1);
       }
 
+<<<<<<< HEAD
       if (g_master_rx_done != 0)
       {
         Master_ParseSensor(g_master_buffer.rx_buf, &g_master_sensor);
+=======
+      if (g_master_rx_done != 0U)
+      {
+>>>>>>> origin/develop
         printf("[Master] Read Sensor: Temp=%d.%d C, Humi=%d.%d %%, Light=%d lux\r\n",
                g_master_sensor.temperature / 10, g_master_sensor.temperature % 10,
                g_master_sensor.humidity / 10, g_master_sensor.humidity % 10,
@@ -214,6 +237,7 @@ void Slave_Task(void const * argument)
   /* Infinite loop: 更新模拟传感器数据, 打印接收到的时间和当前传感器值 */
   for(;;)
   {
+<<<<<<< HEAD
     /* 检查并恢复 I2C 监听模式 (处理非 AF 错误) */
     Slave_RecoverI2C();
 
@@ -227,6 +251,11 @@ void Slave_Task(void const * argument)
       Slave_ParseTime(g_slave_buffer.rx_buf, &g_slave_time);
     }
 
+=======
+    /* 更新从机模拟传感器数据 */
+    Slave_UpdateSensor();
+
+>>>>>>> origin/develop
     /* 打印从机接收到的主机时间 */
     printf("[Slave]  Recv Time: %04u-%02u-%02u %02u:%02u:%02u | "
            "Temp=%d.%d C, Humi=%d.%d %%, Light=%d lux\r\n",

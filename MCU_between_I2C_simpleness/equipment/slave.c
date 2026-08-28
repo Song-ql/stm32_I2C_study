@@ -5,6 +5,7 @@ SlaveBuffer_t g_slave_buffer;
 TimeData_t g_slave_time = {2026, 1, 1, 0, 0, 0};
 SensorData_t g_slave_sensor = {250, 500, 300};
 
+<<<<<<< HEAD
 /* 从机初始化: 使能 I2C2 监听模式 (Listen Mode)
  * 监听模式下, 从机持续监听总线, 被主机寻址时触发 HAL_I2C_AddrCallback,
  * 由该回调根据主机读写方向决定启动接收或发送。
@@ -31,6 +32,14 @@ void Slave_RecoverI2C(void)
 }
 
 /* 更新从机模拟传感器数据, 并打包到 tx_buf 供主机读取
+=======
+void Slave_Init(void)
+{
+    HAL_I2C_Slave_Receive_IT(&hi2c2, g_slave_buffer.rx_buf, sizeof(g_slave_buffer.rx_buf));
+}
+
+/* 更新从机模拟传感器数据
+>>>>>>> origin/develop
  * 使用 HAL_GetTick() 产生随时间变化的伪数据, 模拟真实传感器采样。
  */
 void Slave_UpdateSensor(void)
@@ -45,6 +54,7 @@ void Slave_UpdateSensor(void)
 
     /* 光照强度: 0 ~ 999 lux */
     g_slave_sensor.light = (int16_t)((tick * 13) % 1000);
+<<<<<<< HEAD
 
     /* 打包到发送缓冲区, 供主机读事务直接发送 */
     Slave_PackSensor(&g_slave_sensor, g_slave_buffer.tx_buf);
@@ -72,4 +82,30 @@ void Slave_PackSensor(const SensorData_t *sensor, uint8_t *buf)
     buf[3] = (uint8_t)(sensor->humidity >> 8);
     buf[4] = (uint8_t)(sensor->light & 0xFF);
     buf[5] = (uint8_t)(sensor->light >> 8);
+=======
+}
+
+/* 将接收到的时间帧解析到 g_slave_time
+ * 帧格式: [cmd][year_lo][year_hi][month][day][hour][minute][second]
+ */
+void Slave_ParseTime(const uint8_t *buf)
+{
+    g_slave_time.year   = (uint16_t)buf[1] | ((uint16_t)buf[2] << 8);
+    g_slave_time.month  = buf[3];
+    g_slave_time.day    = buf[4];
+    g_slave_time.hour   = buf[5];
+    g_slave_time.minute = buf[6];
+    g_slave_time.second = buf[7];
+}
+
+/* 将传感器数据打包到 tx_buf (小端序) */
+void Slave_PackSensor(uint8_t *buf)
+{
+    buf[0] = (uint8_t)(g_slave_sensor.temperature & 0xFF);
+    buf[1] = (uint8_t)((g_slave_sensor.temperature >> 8) & 0xFF);
+    buf[2] = (uint8_t)(g_slave_sensor.humidity & 0xFF);
+    buf[3] = (uint8_t)((g_slave_sensor.humidity >> 8) & 0xFF);
+    buf[4] = (uint8_t)(g_slave_sensor.light & 0xFF);
+    buf[5] = (uint8_t)((g_slave_sensor.light >> 8) & 0xFF);
+>>>>>>> origin/develop
 }

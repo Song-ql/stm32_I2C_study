@@ -94,7 +94,7 @@ int main(void)
   MX_I2C2_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-  HAL_I2C_Slave_Receive_IT(&hi2c2,g_slave_buffer.pRx_buf,sizeof(g_slave_buffer.pRx_buf));
+  Slave_Init();
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in cmsis_os2.c) */

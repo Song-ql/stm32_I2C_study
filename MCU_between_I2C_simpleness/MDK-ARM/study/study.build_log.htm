@@ -3,54 +3,66 @@
 <pre>
 <h1>µVision Build Log</h1>
 <h2>Tool Versions:</h2>
-IDE-Version: ¦ÌVision V5.43.1.0
-Copyright (C) 2025 ARM Ltd and ARM Germany GmbH. All rights reserved.
-License Information: 1 8619153439209, 1, LIC=NQQMA-1YVTR-NNWAF-6HJVG-18VHF-MDFIN
+IDE-Version: ¦ÌVision V5.30.0.0
+Copyright (C) 2020 ARM Ltd and ARM Germany GmbH. All rights reserved.
+License Information: a songqianlin, a, LIC=ATTQ1-C888J-DYRV3-AKPAS-3KTD0-L9BNK
  
 Tool Versions:
-Toolchain:       MDK-ARM Plus  Version: 5.43.0.0
-Toolchain Path:  D:\Soft\MDK\ARM\ARMCC\Bin
-C Compiler:      Armcc.exe V5.06 update 2 (build 183)
-Assembler:       Armasm.exe V5.06 update 2 (build 183)
-Linker/Locator:  ArmLink.exe V5.06 update 2 (build 183)
-Library Manager: ArmAr.exe V5.06 update 2 (build 183)
-Hex Converter:   FromElf.exe V5.06 update 2 (build 183)
-CPU DLL:         SARMCM3.DLL V5.43.0.0
-Dialog DLL:      DCM.DLL V1.17.5.0
-Target DLL:      CMSIS_AGDI.dll V1.33.24.0
-Dialog DLL:      TCM.DLL V1.56.6.0
+Toolchain:       MDK-ARM Plus  Version: 5.30.0.0
+Toolchain Path:  E:\keil\core\ARM\ARMCC\Bin
+C Compiler:      Armcc.exe V5.06 update 6 (build 750)
+Assembler:       Armasm.exe V5.06 update 6 (build 750)
+Linker/Locator:  ArmLink.exe V5.06 update 6 (build 750)
+Library Manager: ArmAr.exe V5.06 update 6 (build 750)
+Hex Converter:   FromElf.exe V5.06 update 6 (build 750)
+CPU DLL:         SARMCM3.DLL V5.30.0.0
+Dialog DLL:      DCM.DLL V1.17.3.0
+Target DLL:      CMSIS_AGDI.dll V1.32.5.0
+Dialog DLL:      TCM.DLL V1.42.0.0
  
 <h2>Project:</h2>
-C:\Users\86191\Desktop\study\MCU_between_I2C_simpleness\MDK-ARM\study.uvprojx
-Project File Date:  08/26/2026
+E:\study\stm32_I2C_study\MCU_between_I2C_simpleness\MDK-ARM\study.uvprojx
+Project File Date:  08/28/2026
 
 <h2>Output:</h2>
-*** Using Compiler 'V5.06 update 2 (build 183)', folder: 'D:\Soft\MDK\ARM\ARMCC\Bin'
+*** Using Compiler 'V5.06 update 6 (build 750)', folder: 'E:\keil\core\ARM\ARMCC\Bin'
 Build target 'study'
-"study\study.axf" - 0 Error(s), 0 Warning(s).
+compiling BSP_IIC.c...
+compiling slave.c...
+compiling master.c...
+compiling main.c...
+compiling freertos.c...
+../Core/Src/freertos.c(135): warning:  #177-D: variable "ret"  was declared but never referenced
+  	uint8_t ret;
+../Core/Src/freertos.c: 1 warning, 0 errors
+linking...
+Program Size: Code=14816 RO-data=564 RW-data=156 ZI-data=5276  
+FromELF: creating hex file...
+"study\study.axf" - 0 Error(s), 1 Warning(s).
 
 <h2>Software Packages used:</h2>
 
 Package Vendor: ARM
-                http://www.keil.com/pack/ARM.CMSIS.4.5.0.pack
-                ARM::CMSIS@4.5.0
+                http://www.keil.com/pack/ARM.CMSIS.5.7.0.pack
+                ARM.CMSIS.5.7.0
                 CMSIS (Cortex Microcontroller Software Interface Standard)
-   * Component: CORE Version: 4.3.0
+   * Component: CORE Version: 5.4.0
 
 Package Vendor: Keil
-                http://www.keil.com/pack/Keil.STM32F1xx_DFP.1.0.4.pack
-                Keil::STM32F1xx_DFP@1.0.4
+                https://www.keil.com/pack/Keil.STM32F1xx_DFP.2.4.1.pack
+                Keil.STM32F1xx_DFP.2.4.1
                 STMicroelectronics STM32F1 Series Device Support, Drivers and Examples
 
 <h2>Collection of Component include folders:</h2>
-  ./RTE/_study
-  D:/Soft/MDK/ARM/PACK/ARM/CMSIS/4.5.0/CMSIS/Include
-  D:/Soft/MDK/ARM/PACK/Keil/STM32F1xx_DFP/1.0.4/Device/Include
+  .\RTE\_study
+  E:\keil\pack\ARM\CMSIS\5.7.0\CMSIS\Core\Include
+  E:\keil\pack\Keil\STM32F1xx_DFP\2.4.1\Device\Include
 
 <h2>Collection of Component Files used:</h2>
 
-   * Component: ARM::CMSIS:CORE@4.3.0
-Build Time Elapsed:  00:00:00
+   * Component: ARM::CMSIS:CORE:5.4.0
+      Include file:  CMSIS\Core\Include\tz_context.h
+Build Time Elapsed:  00:00:07
 </pre>
 </body>
 </html>

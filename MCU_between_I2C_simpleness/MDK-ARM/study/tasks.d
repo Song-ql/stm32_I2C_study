@@ -1,9 +1,9 @@
 study\tasks.o: ../Middlewares/Third_Party/FreeRTOS/Source/tasks.c
-study\tasks.o: D:\Soft\MDK\ARM\ARMCC\Bin\..\include\stdlib.h
-study\tasks.o: D:\Soft\MDK\ARM\ARMCC\Bin\..\include\string.h
+study\tasks.o: E:\keil\core\ARM\ARMCC\Bin\..\include\stdlib.h
+study\tasks.o: E:\keil\core\ARM\ARMCC\Bin\..\include\string.h
 study\tasks.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h
-study\tasks.o: D:\Soft\MDK\ARM\ARMCC\Bin\..\include\stddef.h
-study\tasks.o: D:\Soft\MDK\ARM\ARMCC\Bin\..\include\stdint.h
+study\tasks.o: E:\keil\core\ARM\ARMCC\Bin\..\include\stddef.h
+study\tasks.o: E:\keil\core\ARM\ARMCC\Bin\..\include\stdint.h
 study\tasks.o: ../Core/Inc/FreeRTOSConfig.h
 study\tasks.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h
 study\tasks.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/portable.h

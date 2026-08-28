@@ -465,11 +465,11 @@ e/Inc -I../Drivers/STM32F1xx_HAL_Driver/Inc -I../Drivers/STM32F1xx_HAL_Driver/I
 nc/Legacy -I../Middlewares/Third_Party/FreeRTOS/Source/include -I../Middlewares
 /Third_Party/FreeRTOS/Source/CMSIS_RTOS -I../Middlewares/Third_Party/FreeRTOS/S
 ource/portable/RVDS/ARM_CM3 -I../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I..
-/Drivers/CMSIS/Include -I.\RTE\_study -ID:\Soft\MDK\ARM\PACK\ARM\CMSIS\4.5.0\CM
-SIS\Include -ID:\Soft\MDK\ARM\PACK\Keil\STM32F1xx_DFP\1.0.4\Device\Include --pr
-edefine="__MICROLIB SETA 1" --predefine="__UVISION_VERSION SETA 543" --predefin
-e="STM32F10X_MD SETA 1" --predefine="_RTE_ SETA 1" --list=startup_stm32f103xb.l
-st startup_stm32f103xb.s
+/Drivers/CMSIS/Include -I.\RTE\_study -IE:\keil\pack\ARM\CMSIS\5.7.0\CMSIS\Core
+\Include -IE:\keil\pack\Keil\STM32F1xx_DFP\2.4.1\Device\Include --predefine="__
+MICROLIB SETA 1" --predefine="__UVISION_VERSION SETA 530" --predefine="_RTE_ SE
+TA 1" --predefine="STM32F10X_MD SETA 1" --predefine="_RTE_ SETA 1" --list=start
+up_stm32f103xb.lst startup_stm32f103xb.s
 
 
 

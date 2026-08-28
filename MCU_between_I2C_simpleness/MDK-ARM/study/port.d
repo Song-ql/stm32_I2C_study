@@ -1,7 +1,7 @@
 study\port.o: ../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM3/port.c
 study\port.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h
-study\port.o: D:\Soft\MDK\ARM\ARMCC\Bin\..\include\stddef.h
-study\port.o: D:\Soft\MDK\ARM\ARMCC\Bin\..\include\stdint.h
+study\port.o: E:\keil\core\ARM\ARMCC\Bin\..\include\stddef.h
+study\port.o: E:\keil\core\ARM\ARMCC\Bin\..\include\stdint.h
 study\port.o: ../Core/Inc/FreeRTOSConfig.h
 study\port.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h
 study\port.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/portable.h

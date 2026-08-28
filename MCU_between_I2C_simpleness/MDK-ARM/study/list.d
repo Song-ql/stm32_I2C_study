@@ -1,8 +1,8 @@
 study\list.o: ../Middlewares/Third_Party/FreeRTOS/Source/list.c
-study\list.o: D:\Soft\MDK\ARM\ARMCC\Bin\..\include\stdlib.h
+study\list.o: E:\keil\core\ARM\ARMCC\Bin\..\include\stdlib.h
 study\list.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h
-study\list.o: D:\Soft\MDK\ARM\ARMCC\Bin\..\include\stddef.h
-study\list.o: D:\Soft\MDK\ARM\ARMCC\Bin\..\include\stdint.h
+study\list.o: E:\keil\core\ARM\ARMCC\Bin\..\include\stddef.h
+study\list.o: E:\keil\core\ARM\ARMCC\Bin\..\include\stdint.h
 study\list.o: ../Core/Inc/FreeRTOSConfig.h
 study\list.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h
 study\list.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/portable.h

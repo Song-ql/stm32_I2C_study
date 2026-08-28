@@ -1,8 +1,8 @@
 study\timers.o: ../Middlewares/Third_Party/FreeRTOS/Source/timers.c
-study\timers.o: D:\Soft\MDK\ARM\ARMCC\Bin\..\include\stdlib.h
+study\timers.o: E:\keil\core\ARM\ARMCC\Bin\..\include\stdlib.h
 study\timers.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h
-study\timers.o: D:\Soft\MDK\ARM\ARMCC\Bin\..\include\stddef.h
-study\timers.o: D:\Soft\MDK\ARM\ARMCC\Bin\..\include\stdint.h
+study\timers.o: E:\keil\core\ARM\ARMCC\Bin\..\include\stddef.h
+study\timers.o: E:\keil\core\ARM\ARMCC\Bin\..\include\stdint.h
 study\timers.o: ../Core/Inc/FreeRTOSConfig.h
 study\timers.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h
 study\timers.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/portable.h

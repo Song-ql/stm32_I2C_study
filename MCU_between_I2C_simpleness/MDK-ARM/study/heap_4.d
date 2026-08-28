@@ -1,8 +1,8 @@
 study\heap_4.o: ../Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c
-study\heap_4.o: D:\Soft\MDK\ARM\ARMCC\Bin\..\include\stdlib.h
+study\heap_4.o: E:\keil\core\ARM\ARMCC\Bin\..\include\stdlib.h
 study\heap_4.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h
-study\heap_4.o: D:\Soft\MDK\ARM\ARMCC\Bin\..\include\stddef.h
-study\heap_4.o: D:\Soft\MDK\ARM\ARMCC\Bin\..\include\stdint.h
+study\heap_4.o: E:\keil\core\ARM\ARMCC\Bin\..\include\stddef.h
+study\heap_4.o: E:\keil\core\ARM\ARMCC\Bin\..\include\stdint.h
 study\heap_4.o: ../Core/Inc/FreeRTOSConfig.h
 study\heap_4.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h
 study\heap_4.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/portable.h

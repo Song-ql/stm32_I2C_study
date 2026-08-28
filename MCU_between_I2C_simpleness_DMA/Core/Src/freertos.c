@@ -136,12 +136,36 @@ void Master_Task(void const * argument)
   /* Infinite loop: 周期性发送时间到从机, 并读取从机传感器数据 */
   for(;;)
   {
-    /* 主机发送时间到从机 */
+    /* 检查并恢复 I2C1 状态 (处理总线异常导致的卡死) */
+    Master_RecoverI2C();
+
+    /* 主机发送时间到从机 (DMA发送方式) */
     if (Master_SendTime(&master_time) == 0)
     {
-      printf("[Master] Send Time: %04u-%02u-%02u %02u:%02u:%02u\r\n",
-             master_time.year, master_time.month, master_time.day,
-             master_time.hour, master_time.minute, master_time.second);
+      /* 轮询等待DMA发送完成, 超时 1000ms */
+      wait_start = HAL_GetTick();
+      while ((g_master_tx_done == 0) && ((HAL_GetTick() - wait_start) < 1000))
+      {
+        osDelay(1);
+      }
+
+      if (g_master_tx_done != 0)
+      {
+        if (g_master_tx_error == 0)
+        {
+          printf("[Master] Send Time: %04u-%02u-%02u %02u:%02u:%02u\r\n",
+                 master_time.year, master_time.month, master_time.day,
+                 master_time.hour, master_time.minute, master_time.second);
+        }
+        else
+        {
+          printf("[Master] Send Time ERROR\r\n");
+        }
+      }
+      else
+      {
+        printf("[Master] Send Time TIMEOUT\r\n");
+      }
     }
     else
     {
@@ -179,11 +203,18 @@ void Master_Task(void const * argument)
 
       if (g_master_rx_done != 0)
       {
-        Master_ParseSensor(g_master_buffer.rx_buf, &g_master_sensor);
-        printf("[Master] Read Sensor: Temp=%d.%d C, Humi=%d.%d %%, Light=%d lux\r\n",
-               g_master_sensor.temperature / 10, g_master_sensor.temperature % 10,
-               g_master_sensor.humidity / 10, g_master_sensor.humidity % 10,
-               g_master_sensor.light);
+        if (g_master_rx_error == 0)
+        {
+          Master_ParseSensor(g_master_buffer.rx_buf, &g_master_sensor);
+          printf("[Master] Read Sensor: Temp=%d.%d C, Humi=%d.%d %%, Light=%d lux\r\n",
+                 g_master_sensor.temperature / 10, g_master_sensor.temperature % 10,
+                 g_master_sensor.humidity / 10, g_master_sensor.humidity % 10,
+                 g_master_sensor.light);
+        }
+        else
+        {
+          printf("[Master] Read Sensor ERROR\r\n");
+        }
       }
       else
       {

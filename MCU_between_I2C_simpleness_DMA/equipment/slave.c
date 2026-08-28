@@ -46,8 +46,12 @@ void Slave_UpdateSensor(void)
     /* 光照强度: 0 ~ 999 lux */
     g_slave_sensor.light = (int16_t)((tick * 13) % 1000);
 
-    /* 打包到发送缓冲区, 供主机读事务直接发送 */
+    /* 打包到发送缓冲区, 供主机读事务直接发送
+     * 进入临界区: 防止 I2C2 TX DMA 中断在打包过程中读取 tx_buf,
+     * 造成发送新旧混合的脏数据 */
+    __disable_irq();
     Slave_PackSensor(&g_slave_sensor, g_slave_buffer.tx_buf);
+    __enable_irq();
 }
 
 /* 将时间数据从 buf 解析到 out (小端序)

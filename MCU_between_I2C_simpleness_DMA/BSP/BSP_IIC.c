@@ -15,6 +15,17 @@ void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c)
     if (hi2c->Instance == I2C1)
     {
         g_master_rx_done = 1;
+        g_master_current_xfer = 0;
+    }
+}
+
+/* I2C1 主机发送完成: 只置标志, 发送结果判断放到任务中 */
+void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c)
+{
+    if (hi2c->Instance == I2C1)
+    {
+        g_master_tx_done = 1;
+        g_master_current_xfer = 0;
     }
 }
 
@@ -65,7 +76,8 @@ void HAL_I2C_ListenCpltCallback(I2C_HandleTypeDef *hi2c)
  *   其他错误 (BERR/OVR 等): 置恢复标志, 由任务调用 Slave_RecoverI2C 恢复
  *                          (HAL 会在本回调返回后关中断, 无法在中断内直接恢复)
  *   注意: 任何错误都不置 g_slave_rx_done, 只有成功接收才解析
- * 主机: 置 rx_done 以解除任务轮询阻塞
+ * 主机: 根据 g_master_current_xfer 判断是发送还是接收出错,
+ *       置位对应 error 和 done 标志以解除任务轮询阻塞
  */
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c)
 {
@@ -78,6 +90,16 @@ void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c)
     }
     else if (hi2c->Instance == I2C1)
     {
-        g_master_rx_done = 1;
+        if (g_master_current_xfer == 'T')
+        {
+            g_master_tx_error = 1;
+            g_master_tx_done = 1;
+        }
+        else if (g_master_current_xfer == 'R')
+        {
+            g_master_rx_error = 1;
+            g_master_rx_done = 1;
+        }
+        g_master_current_xfer = 0;
     }
 }

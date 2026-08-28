@@ -17,12 +17,24 @@ extern MasterBuffer_t g_master_buffer;
 /* 主机 DMA 接收完成标志 */
 extern volatile uint8_t g_master_rx_done;
 
+/* 主机 DMA 接收错误标志 (中断置位, 任务清除) */
+extern volatile uint8_t g_master_rx_error;
+
+/* 主机 DMA 发送完成标志 */
+extern volatile uint8_t g_master_tx_done;
+
+/* 主机 DMA 发送错误标志 (中断置位, 任务清除) */
+extern volatile uint8_t g_master_tx_error;
+
+/* 主机当前传输方向: 'T'=发送, 'R'=接收, 0=空闲 */
+extern volatile uint8_t g_master_current_xfer;
+
 /* 主机解析后的传感器数据 */
 extern SensorData_t g_master_sensor;
 
-/* 主机发送时间到从机
- * 参数: pTime - 时间数据指针
- * 返回: 0 = 成功, 1 = 失败
+/* 主机发送时间到从机 (DMA发送)
+ * 返回: 0 = 成功启动, 1 = 失败
+ * 注意: 需轮询 g_master_tx_done, 完成后确认发送结果。
  */
 uint8_t Master_SendTime(const TimeData_t *pTime);
 
@@ -37,5 +49,10 @@ uint8_t Master_ReadSensor(void);
  * 应在 g_master_rx_done 置位后调用。
  */
 void Master_ParseSensor(const uint8_t *buf, SensorData_t *out);
+
+/* 主机 I2C 错误恢复 (在任务上下文中调用)
+ * 检查 I2C1 状态, 若异常则重新初始化以恢复总线。
+ */
+void Master_RecoverI2C(void);
 
 #endif

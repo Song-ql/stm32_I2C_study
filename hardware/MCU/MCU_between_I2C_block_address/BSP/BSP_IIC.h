@@ -4,30 +4,26 @@
 #include "stm32f1xx_hal.h"
 
 /* 从机地址 (8 位) */
-#define BSP_IIC_SLAVE_ADDR_8BIT   (0x50<<1)
+#define BSP_IIC_SLAVE_ADDR_8BIT (0x50<<1)
 
 /* I2C 传输超时时间(ms) */
-#define BSP_IIC_TIMEOUT           1000
+#define BSP_IIC_TIMEOUT 1000
 
 /* ===================== 通信协议定义 ===================== */
 
 /* 主机写: 时间数据长度 = 7 字节 (TimeData_t) */
-#define I2C_FRAME_SIZE            7
-
-/* ===================== 带数据地址的寄存器映射 ===================== */
-/* 从机寄存器文件大小 (覆盖到 SLAVE_REG_LIGHT + 2, 并留余量) */
-#define SLAVE_REG_SIZE            64
+#define I2C_FRAME_TIME_SIZE 7
 
 /* 单个传感器数据项长度 (温度/湿度/光照 各 2 字节, 小端) */
-#define I2C_SENSOR_ITEM_SIZE      2
+#define I2C_SENSOR_SIZE 2
 
 /* 从机寄存器地址定义
- * 温度/湿度/光照 分别使用独立的寄存器地址, 各占 2 字节
+ * 温度/湿度/光照 各占独立寄存器地址, 每次单独读取 2 字节。
  */
-#define SLAVE_REG_TIME            0x00   /* 时间数据起始地址 (7 字节) */
-#define SLAVE_REG_TEMP            0x10   /* 温度寄存器 (2 字节, 小端) */
-#define SLAVE_REG_HUMI            0x20   /* 湿度寄存器 (2 字节, 小端) */
-#define SLAVE_REG_LIGHT           0x30   /* 光照强度寄存器 (2 字节, 小端) */
+#define SLAVE_REG_TIME 0x00   /* 时间数据起始地址 (7 字节) */
+#define SLAVE_REG_TEMP 0x10   /* 温度寄存器 (2 字节, 小端) */
+#define SLAVE_REG_HUMI 0x12   /* 湿度寄存器 (2 字节, 小端) */
+#define SLAVE_REG_LIGHT 0x14   /* 光照强度寄存器 (2 字节, 小端) */
 
 /* 时间数据结构 (主机发送给从机) */
 typedef struct
@@ -40,10 +36,7 @@ typedef struct
     uint8_t  second;
 } TimeData_t;   /* 共 7 字节 */
 
-/* 传感器数据结构 (主机读取从机)
- * 温度/湿度 放大 10 倍存储, 例如 25.5°C -> 255, 60.5% -> 605
- * 光照强度 单位 lux
- */
+/* 传感器数据结构 (主机读取从机) */
 typedef struct
 {
     int16_t  temperature;   /* 温度 x10, 单位 0.1°C */

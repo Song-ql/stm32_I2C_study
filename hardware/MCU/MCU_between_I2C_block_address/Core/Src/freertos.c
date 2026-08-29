@@ -28,7 +28,6 @@
 #include "master.h"
 #include "slave.h"
 #include "BSP_IIC.h"
-#include <string.h>
 #include "BSP_UART.h"
 /* USER CODE END Includes */
 
@@ -132,7 +131,7 @@ void Master_Task(void const * argument)
 {
   /* USER CODE BEGIN Master_Task */
 	TimeData_t master_time = {2026, 8, 27, 12, 0, 0};
-  /* Infinite loop: 周期性发送时间到从机, 并读取从机传感器数据 */
+  /* Infinite loop: 周期性发送时间到从机, 并单独读取从机传感器数据 */
   for(;;)
   {
     /* 主机带地址发送时间到从机 (写入 SLAVE_REG_TIME 寄存器) */
@@ -167,16 +166,13 @@ void Master_Task(void const * argument)
 
     osDelay(500);
 
-    /* 主机带地址读取从机温湿度、光照强度
-     * 分别从 SLAVE_REG_TEMP / SLAVE_REG_HUMI / SLAVE_REG_LIGHT 三个独立寄存器读取,
-     * Master_ReadSensorByAddr 内部已组装到 g_master_sensor。
-     */
+    /* 主机单独读取从机传感器数据 (温度/湿度/光照 各读 2 字节) */
     if (Master_ReadSensorByAddr() == 0)
     {
       /* 光照合法范围兜底校验 (从机生成范围 0 ~ 999) */
       if ((g_master_sensor.light >= 0) && (g_master_sensor.light <= 999))
       {
-        printf("[Master] Read Sensor(addr T=0x%02X H=0x%02X L=0x%02X): Temp=%d.%d C, Humi=%d.%d %%, Light=%d lux\r\n",
+        printf("[Master] Read Sensor[Individual](addr T=0x%02X H=0x%02X L=0x%02X): Temp=%d.%d C, Humi=%d.%d %%, Light=%d lux\r\n",
                SLAVE_REG_TEMP, SLAVE_REG_HUMI, SLAVE_REG_LIGHT,
                g_master_sensor.temperature / 10, g_master_sensor.temperature % 10,
                g_master_sensor.humidity / 10, g_master_sensor.humidity % 10,
@@ -210,28 +206,32 @@ void Slave_Task(void const * argument)
 
   /* Infinite loop: 阻塞式收发循环 (带数据地址)
    * 协议顺序与主机匹配:
-   *   主机写时间到寄存器      -> 从机 Slave_ReceiveByAddr
-   *   主机依次读 TEMP/HUMI/LIGHT -> 从机 Slave_TransmitByAddr x3
+   *   主机写时间到寄存器          -> 从机 Slave_WriteByAddr (写处理)
+   *   主机单独读取传感器 (各 2 字节) -> 从机 Slave_ReadByAddr (读处理)
+   * 读和写使用独立函数, 互不共用。
    */
   for(;;)
   {
-    /* 1. 阻塞等待主机写入时间数据 (带寄存器地址) */
-    if (Slave_ReceiveByAddr() == 0)
+    /* 1. 阻塞等待主机写入时间数据 (写寄存器) */
+    if (Slave_WriteByAddr() == 0)
     {
-      /* Slave_ReceiveByAddr 内部已将寄存器中的时间解析到 g_slave_time */
+      /* Slave_WriteByAddr 内部已将寄存器中的时间解析到 g_slave_time */
       printf("[Slave]  Recv Time(addr=0x%02X): %04u-%02u-%02u %02u:%02u:%02u\r\n",
              SLAVE_REG_TIME,
              g_slave_time.year, g_slave_time.month, g_slave_time.day,
              g_slave_time.hour, g_slave_time.minute, g_slave_time.second);
     }
 
-    /* 2. 更新传感器数据并同步到三个独立寄存器 */
+    /* 2. 更新传感器数据并同步到寄存器 */
     Slave_UpdateSensor();
 
-    /* 3. 阻塞等待主机依次读取温度/湿度/光照寄存器 (各 2 字节) */
-    Slave_TransmitByAddr();   /* SLAVE_REG_TEMP  */
-    Slave_TransmitByAddr();   /* SLAVE_REG_HUMI  */
-    Slave_TransmitByAddr();   /* SLAVE_REG_LIGHT */
+    /* 3. 阻塞服务主机的传感器读取请求 (读寄存器)
+     * 主机分三次分别读取温度/湿度/光照 (各 2 字节)。
+     * 退出条件: 主机停止读取, Slave_ReadByAddr 超时返回 1。
+     */
+    while (Slave_ReadByAddr() == 0)
+    {
+    }
   }
   /* USER CODE END Slave_Task */
 }

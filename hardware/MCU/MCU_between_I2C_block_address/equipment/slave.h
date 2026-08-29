@@ -5,16 +5,6 @@
 #include "BSP_IIC.h"
 #include "i2c.h"
 
-/* 从机数据缓冲区 */
-typedef struct
-{
-    uint8_t rx_buf[I2C_FRAME_SIZE]; /* 接收主机的时间数据 */
-    uint8_t tx_buf[I2C_SENSOR_DATA_SIZE]; /* 传感器数据, 供主机读取 */
-} SlaveBuffer_t;
-
-/* 从机数据缓冲区 */
-extern SlaveBuffer_t g_slave_buffer;
-
 /* 从机接收到的时间 */
 extern TimeData_t g_slave_time;
 
@@ -27,17 +17,6 @@ void Slave_Init(void);
 /* 从机 I2C 错误恢复 (阻塞式无需恢复, 保留为空操作) */
 void Slave_RecoverI2C(void);
 
-/* 从机阻塞接收主机写入的时间数据
- * 返回: 0 = 成功, 1 = 失败/超时
- */
-uint8_t Slave_ReceiveTime(void);
-
-/* 从机阻塞发送传感器数据给主机
- * 返回: 0 = 成功, 1 = 失败/超时
- * 调用前应确保 g_slave_buffer.tx_buf 已更新。
- */
-uint8_t Slave_TransmitSensor(void);
-
 /* 更新从机模拟传感器数据 (在从机任务中周期调用) */
 void Slave_UpdateSensor(void);
 
@@ -46,9 +25,31 @@ void Slave_UpdateSensor(void);
  */
 void Slave_ParseTime(const uint8_t *buf, TimeData_t *out);
 
-/* 打包从机传感器数据到 buf (小端序)
- * 参数: sensor - 传感器数据; buf - 输出字节缓冲区
+/* ===================== 带数据地址的从机接口 ===================== */
+
+/* 从机寄存器文件 (主机通过寄存器地址访问) */
+extern uint8_t g_slave_regs[SLAVE_REG_SIZE];
+
+/* 从机带地址接收主机写入的数据
+ * 主机使用 Mem_Write, 发送帧为 [Reg][Data...], 本函数一次接收全部。
+ * 接收后将数据写入 g_slave_regs[reg ... reg+len-1], 并同步到 g_slave_time。
+ * 返回: 0 = 成功, 1 = 失败/超时
  */
-void Slave_PackSensor(const SensorData_t *sensor, uint8_t *buf);
+uint8_t Slave_ReceiveByAddr(void);
+
+/* 从机带地址发送数据给主机
+ * 主机使用 Mem_Read, 时序为 [Reg] (写阶段) + Sr [Data...] (读阶段)。
+ * 本函数先阻塞接收 1 字节寄存器地址, 再阻塞发送该地址对应的数据。
+ * 返回: 0 = 成功, 1 = 失败/超时
+ */
+uint8_t Slave_TransmitByAddr(void);
+
+/* 将时间数据同步到从机寄存器文件 (SLAVE_REG_TIME 起始 7 字节) */
+void Slave_SyncTimeToRegs(void);
+
+/* 将传感器数据同步到从机寄存器文件
+ * 温度 -> SLAVE_REG_TEMP, 湿度 -> SLAVE_REG_HUMI, 光照 -> SLAVE_REG_LIGHT (各 2 字节)
+ */
+void Slave_SyncSensorToRegs(void);
 
 #endif

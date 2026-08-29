@@ -135,10 +135,11 @@ void Master_Task(void const * argument)
   /* Infinite loop: 周期性发送时间到从机, 并读取从机传感器数据 */
   for(;;)
   {
-    /* 主机发送时间到从机 */
-    if (Master_SendTime(&master_time) == 0)
+    /* 主机带地址发送时间到从机 (写入 SLAVE_REG_TIME 寄存器) */
+    if (Master_SendTimeByAddr(&master_time) == 0)
     {
-      printf("[Master] Send Time: %04u-%02u-%02u %02u:%02u:%02u\r\n",
+      printf("[Master] Send Time(addr=0x%02X): %04u-%02u-%02u %02u:%02u:%02u\r\n",
+             SLAVE_REG_TIME,
              master_time.year, master_time.month, master_time.day,
              master_time.hour, master_time.minute, master_time.second);
     }
@@ -166,28 +167,24 @@ void Master_Task(void const * argument)
 
     osDelay(500);
 
-    /* 主机读取从机温湿度、光照强度 (阻塞接收方式) */
-    if (Master_ReadSensor() == 0)
+    /* 主机带地址读取从机温湿度、光照强度
+     * 分别从 SLAVE_REG_TEMP / SLAVE_REG_HUMI / SLAVE_REG_LIGHT 三个独立寄存器读取,
+     * Master_ReadSensorByAddr 内部已组装到 g_master_sensor。
+     */
+    if (Master_ReadSensorByAddr() == 0)
     {
-      /* 解析传感器帧 */
-      if (Master_ParseSensor(g_master_buffer.rx_buf, &g_master_sensor) == 0)
+      /* 光照合法范围兜底校验 (从机生成范围 0 ~ 999) */
+      if ((g_master_sensor.light >= 0) && (g_master_sensor.light <= 999))
       {
-        /* 光照合法范围兜底校验 (从机生成范围 0 ~ 999) */
-        if ((g_master_sensor.light >= 0) && (g_master_sensor.light <= 999))
-        {
-          printf("[Master] Read Sensor: Temp=%d.%d C, Humi=%d.%d %%, Light=%d lux\r\n",
-                 g_master_sensor.temperature / 10, g_master_sensor.temperature % 10,
-                 g_master_sensor.humidity / 10, g_master_sensor.humidity % 10,
-                 g_master_sensor.light);
-        }
-        else
-        {
-          printf("[Master] Sensor data INVALID, dropped\r\n");
-        }
+        printf("[Master] Read Sensor(addr T=0x%02X H=0x%02X L=0x%02X): Temp=%d.%d C, Humi=%d.%d %%, Light=%d lux\r\n",
+               SLAVE_REG_TEMP, SLAVE_REG_HUMI, SLAVE_REG_LIGHT,
+               g_master_sensor.temperature / 10, g_master_sensor.temperature % 10,
+               g_master_sensor.humidity / 10, g_master_sensor.humidity % 10,
+               g_master_sensor.light);
       }
       else
       {
-        printf("[Master] Sensor PARSE ERROR, dropped\r\n");
+        printf("[Master] Sensor data INVALID, dropped\r\n");
       }
     }
     else
@@ -211,26 +208,30 @@ void Slave_Task(void const * argument)
 {
   /* USER CODE BEGIN Slave_Task */
 
-  /* Infinite loop: 阻塞式收发循环
-   * 协议顺序与主机匹配: 主机写时间 -> 从机 ReceiveTime
-   *                     主机读传感器 -> 从机 TransmitSensor
+  /* Infinite loop: 阻塞式收发循环 (带数据地址)
+   * 协议顺序与主机匹配:
+   *   主机写时间到寄存器      -> 从机 Slave_ReceiveByAddr
+   *   主机依次读 TEMP/HUMI/LIGHT -> 从机 Slave_TransmitByAddr x3
    */
   for(;;)
   {
-    /* 1. 阻塞等待主机写入时间数据 */
-    if (Slave_ReceiveTime() == 0)
+    /* 1. 阻塞等待主机写入时间数据 (带寄存器地址) */
+    if (Slave_ReceiveByAddr() == 0)
     {
-      Slave_ParseTime(g_slave_buffer.rx_buf, &g_slave_time);
-      printf("[Slave]  Recv Time: %04u-%02u-%02u %02u:%02u:%02u\r\n",
+      /* Slave_ReceiveByAddr 内部已将寄存器中的时间解析到 g_slave_time */
+      printf("[Slave]  Recv Time(addr=0x%02X): %04u-%02u-%02u %02u:%02u:%02u\r\n",
+             SLAVE_REG_TIME,
              g_slave_time.year, g_slave_time.month, g_slave_time.day,
              g_slave_time.hour, g_slave_time.minute, g_slave_time.second);
     }
 
-    /* 2. 更新传感器数据并打包到 tx_buf (供后续发送) */
+    /* 2. 更新传感器数据并同步到三个独立寄存器 */
     Slave_UpdateSensor();
 
-    /* 3. 阻塞等待主机读取传感器数据 */
-    Slave_TransmitSensor();
+    /* 3. 阻塞等待主机依次读取温度/湿度/光照寄存器 (各 2 字节) */
+    Slave_TransmitByAddr();   /* SLAVE_REG_TEMP  */
+    Slave_TransmitByAddr();   /* SLAVE_REG_HUMI  */
+    Slave_TransmitByAddr();   /* SLAVE_REG_LIGHT */
   }
   /* USER CODE END Slave_Task */
 }

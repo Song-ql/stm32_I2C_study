@@ -179,7 +179,7 @@ void Master_Task(void const * argument)
 
       if (g_master_rx_done != 0)
       {
-        /* 解析并校验传感器帧 (帧尾校验和) */
+        /* 解析传感器帧 */
         if (Master_ParseSensor(g_master_buffer.rx_buf, &g_master_sensor) == 0)
         {
           /* 光照合法范围兜底校验 (从机生成范围 0 ~ 999) */
@@ -197,7 +197,7 @@ void Master_Task(void const * argument)
         }
         else
         {
-          printf("[Master] Sensor CHECKSUM ERROR, dropped\r\n");
+          printf("[Master] Sensor PARSE ERROR, dropped\r\n");
         }
       }
       else

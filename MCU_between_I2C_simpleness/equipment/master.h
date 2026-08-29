@@ -32,9 +32,9 @@ uint8_t Master_SendTime(const TimeData_t *pTime);
  */
 uint8_t Master_ReadSensor(void);
 
-/* 解析接收到的传感器数据 (小端序), 并校验帧尾校验和
+/* 解析接收到的传感器数据 (小端序)
  * 参数: buf - 原始字节缓冲区; out - 解析结果输出
- * 返回: 0 = 校验通过, out 已更新; 1 = 校验失败, out 保持不变
+ * 返回: 0 = 成功, out 已更新
  * 应在 g_master_rx_done 置位后调用。
  */
 uint8_t Master_ParseSensor(const uint8_t *buf, SensorData_t *out);

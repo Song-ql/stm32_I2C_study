@@ -77,9 +77,7 @@ void Slave_ParseTime(const uint8_t *buf, TimeData_t *out)
 }
 
 /* 将传感器数据从 sensor 打包到 buf (小端序)
- * 格式: [T_lo][T_hi][H_lo][H_hi][L_lo][L_hi][sum][pad]
- * sum = 前 6 字节累加取低 8 位; pad 为填充字节, 占据帧尾,
- * 使主机 HAL 最后两字节背靠背读的重复损坏只落在填充位。
+ * 格式: [T_lo][T_hi][H_lo][H_hi][L_lo][L_hi]
  */
 void Slave_PackSensor(const SensorData_t *sensor, uint8_t *buf)
 {
@@ -89,6 +87,4 @@ void Slave_PackSensor(const SensorData_t *sensor, uint8_t *buf)
     buf[3] = (uint8_t)(sensor->humidity >> 8);
     buf[4] = (uint8_t)(sensor->light & 0xFF);
     buf[5] = (uint8_t)(sensor->light >> 8);
-    buf[6] = (uint8_t)(buf[0] + buf[1] + buf[2] + buf[3] + buf[4] + buf[5]);
-    buf[7] = 0xA5;
 }

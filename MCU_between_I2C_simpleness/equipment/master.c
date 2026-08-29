@@ -56,21 +56,13 @@ uint8_t Master_ReadSensor(void)
     return 0;
 }
 
-/* 解析接收到的传感器数据 (小端序), 并校验帧尾校验和
+/* 解析接收到的传感器数据 (小端序)
  * 参数: buf - 原始字节缓冲区; out - 解析结果输出
- * 返回: 0 = 校验通过, out 已更新; 1 = 校验失败, out 保持不变
+ * 返回: 0 = 成功, out 已更新
  * 应在任务中 g_master_rx_done 置位后调用。
  */
 uint8_t Master_ParseSensor(const uint8_t *buf, SensorData_t *out)
 {
-    uint8_t sum = (uint8_t)(buf[0] + buf[1] + buf[2] + buf[3] + buf[4] + buf[5]);
-
-    /* 校验和不匹配: 帧传输损坏, 丢弃 */
-    if (sum != buf[6])
-    {
-        return 1;
-    }
-
     out->temperature = (int16_t)(buf[0] | ((uint16_t)buf[1] << 8));
     out->humidity    = (int16_t)(buf[2] | ((uint16_t)buf[3] << 8));
     out->light       = (int16_t)(buf[4] | ((uint16_t)buf[5] << 8));

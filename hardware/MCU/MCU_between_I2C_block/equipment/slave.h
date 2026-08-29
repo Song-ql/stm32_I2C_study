@@ -21,17 +21,22 @@ extern TimeData_t g_slave_time;
 /* 从机传感器数据 (模拟) */
 extern SensorData_t g_slave_sensor;
 
-/* 从机 I2C 监听模式需要恢复的标志 (由中断置位, 任务清除) */
-extern volatile uint8_t g_slave_i2c_need_recover;
-
-/* 从机接收完成标志 (中断置位, 任务清除) */
-extern volatile uint8_t g_slave_rx_done;
-
 /* 从机初始化 */
 void Slave_Init(void);
 
-/* 从机 I2C 监听模式错误恢复 (在任务上下文中调用) */
+/* 从机 I2C 错误恢复 (阻塞式无需恢复, 保留为空操作) */
 void Slave_RecoverI2C(void);
+
+/* 从机阻塞接收主机写入的时间数据
+ * 返回: 0 = 成功, 1 = 失败/超时
+ */
+uint8_t Slave_ReceiveTime(void);
+
+/* 从机阻塞发送传感器数据给主机
+ * 返回: 0 = 成功, 1 = 失败/超时
+ * 调用前应确保 g_slave_buffer.tx_buf 已更新。
+ */
+uint8_t Slave_TransmitSensor(void);
 
 /* 更新从机模拟传感器数据 (在从机任务中周期调用) */
 void Slave_UpdateSensor(void);

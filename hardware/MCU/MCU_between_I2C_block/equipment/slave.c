@@ -6,29 +6,52 @@ SlaveBuffer_t g_slave_buffer;
 TimeData_t g_slave_time = {2026, 1, 1, 0, 0, 0};
 SensorData_t g_slave_sensor = {250, 500, 300};
 
-/* 从机初始化: 使能 I2C2 监听模式 (Listen Mode)
- * 监听模式下, 从机持续监听总线, 被主机寻址时触发 HAL_I2C_AddrCallback,
- * 由该回调根据主机读写方向决定启动接收或发送。
+/* 从机初始化: 阻塞式收发, 不使用监听模式
+ * 预打包传感器数据, 确保主机首次读取前 tx_buf 有效。
+ * 收发由 Slave_Task 循环调用 HAL_I2C_Slave_Receive / HAL_I2C_Slave_Transmit 完成。
  */
 void Slave_Init(void)
 {
     /* 预打包传感器数据, 确保主机首次读取前 tx_buf 有效 */
     Slave_PackSensor(&g_slave_sensor, g_slave_buffer.tx_buf);
-    HAL_I2C_EnableListen_IT(&hi2c2);
 }
 
-/* 从机 I2C 监听模式错误恢复
- * 在任务上下文中调用, 检查恢复标志并重新使能监听模式。
- * 用于处理 BERR/OVR 等非 AF 错误 (AF 错误由 ListenCpltCallback 恢复)。
+/* 从机 I2C 错误恢复 (阻塞式无需恢复监听, 保留为空操作以兼容任务调用)
+ * 阻塞式收发中, 超时或错误由 HAL 函数返回值处理, 无需额外恢复。
  */
 void Slave_RecoverI2C(void)
 {
-    if (g_slave_i2c_need_recover != 0)
-    {
-        g_slave_i2c_need_recover = 0;
-        HAL_I2C_DisableListen_IT(&hi2c2);
-        HAL_I2C_EnableListen_IT(&hi2c2);
-    }
+}
+
+/* 从机阻塞接收主机写入的时间数据
+ * 返回: 0 = 成功, 1 = 失败/超时
+ * 注意: 该函数会阻塞直到主机发起写事务或超时。
+ */
+uint8_t Slave_ReceiveTime(void)
+{
+    HAL_StatusTypeDef status;
+
+    status = HAL_I2C_Slave_Receive(&hi2c2, g_slave_buffer.rx_buf,
+                                   sizeof(g_slave_buffer.rx_buf),
+                                   BSP_IIC_TIMEOUT);
+
+    return (status == HAL_OK) ? 0 : 1;
+}
+
+/* 从机阻塞发送传感器数据给主机
+ * 返回: 0 = 成功, 1 = 失败/超时
+ * 注意: 该函数会阻塞直到主机发起读事务或超时。
+ *       调用前应确保 g_slave_buffer.tx_buf 已更新。
+ */
+uint8_t Slave_TransmitSensor(void)
+{
+    HAL_StatusTypeDef status;
+
+    status = HAL_I2C_Slave_Transmit(&hi2c2, g_slave_buffer.tx_buf,
+                                    sizeof(g_slave_buffer.tx_buf),
+                                    BSP_IIC_TIMEOUT);
+
+    return (status == HAL_OK) ? 0 : 1;
 }
 
 /* 更新从机模拟传感器数据, 并打包到 tx_buf 供主机读取
@@ -39,7 +62,7 @@ void Slave_UpdateSensor(void)
     uint32_t tick;
 
     /* I2C 正在向主机发送 tx_buf 时跳过本次更新, 避免传输中改写数据 */
-    if (hi2c2.State == HAL_I2C_STATE_BUSY_TX_LISTEN)
+    if (hi2c2.State == HAL_I2C_STATE_BUSY_TX)
     {
         return;
     }

@@ -14,9 +14,6 @@ typedef struct
 /* 主机数据缓冲区 */
 extern MasterBuffer_t g_master_buffer;
 
-/* 主机中断接收完成标志 */
-extern volatile uint8_t g_master_rx_done;
-
 /* 主机解析后的传感器数据 */
 extern SensorData_t g_master_sensor;
 
@@ -26,16 +23,16 @@ extern SensorData_t g_master_sensor;
  */
 uint8_t Master_SendTime(const TimeData_t *pTime);
 
-/* 主机读取从机传感器数据 (中断接收)
- * 返回: 0 = 成功启动, 1 = 失败
- * 注意: 需轮询 g_master_rx_done, 完成后调用 Master_ParseSensor 解析。
+/* 主机读取从机传感器数据 (阻塞接收)
+ * 返回: 0 = 成功 (数据已写入 g_master_buffer.rx_buf), 1 = 失败
+ * 注意: 函数返回后可直接调用 Master_ParseSensor 解析, 无需轮询标志。
  */
 uint8_t Master_ReadSensor(void);
 
 /* 解析接收到的传感器数据 (小端序)
  * 参数: buf - 原始字节缓冲区; out - 解析结果输出
  * 返回: 0 = 成功, out 已更新
- * 应在 g_master_rx_done 置位后调用。
+ * 注意: 在 Master_ReadSensor 成功返回后直接调用即可。
  */
 uint8_t Master_ParseSensor(const uint8_t *buf, SensorData_t *out);
 

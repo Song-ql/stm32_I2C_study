@@ -3,8 +3,6 @@
 
 MasterBuffer_t g_master_buffer;
 
-volatile uint8_t g_master_rx_done = 0;
-
 SensorData_t g_master_sensor;
 
 /* 将时间数据打包到 tx_buf (小端序)
@@ -36,30 +34,25 @@ uint8_t Master_SendTime(const TimeData_t *pTime)
     return (status == HAL_OK) ? 0 : 1;
 }
 
-/* 主机读取从机传感器数据 (中断接收方式)
- * 接收完成后由 HAL_I2C_MasterRxCpltCallback 置位 g_master_rx_done,
- * 调用方轮询该标志后调用 Master_ParseSensor 解析数据。
+/* 主机读取从机传感器数据 (阻塞接收方式)
+ * 函数返回时数据已就绪, 可直接调用 Master_ParseSensor 解析。
  */
 uint8_t Master_ReadSensor(void)
 {
     HAL_StatusTypeDef status;
 
-    g_master_rx_done = 0;
-    status = HAL_I2C_Master_Receive_IT(&hi2c1, BSP_IIC_SLAVE_ADDR_8BIT,
-                                       g_master_buffer.rx_buf,
-                                       sizeof(g_master_buffer.rx_buf));
-    if (status != HAL_OK)
-    {
-        return 1;
-    }
+    status = HAL_I2C_Master_Receive(&hi2c1, BSP_IIC_SLAVE_ADDR_8BIT,
+                                    g_master_buffer.rx_buf,
+                                    sizeof(g_master_buffer.rx_buf),
+                                    BSP_IIC_TIMEOUT);
 
-    return 0;
+    return (status == HAL_OK) ? 0 : 1;
 }
 
 /* 解析接收到的传感器数据 (小端序)
  * 参数: buf - 原始字节缓冲区; out - 解析结果输出
  * 返回: 0 = 成功, out 已更新
- * 应在任务中 g_master_rx_done 置位后调用。
+ * 注意: 在 Master_ReadSensor 成功返回后直接调用即可。
  */
 uint8_t Master_ParseSensor(const uint8_t *buf, SensorData_t *out)
 {

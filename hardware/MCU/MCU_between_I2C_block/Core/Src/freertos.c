@@ -132,7 +132,6 @@ void Master_Task(void const * argument)
 {
   /* USER CODE BEGIN Master_Task */
 	TimeData_t master_time = {2026, 8, 27, 12, 0, 0};
-	uint32_t wait_start;
   /* Infinite loop: 周期性发送时间到从机, 并读取从机传感器数据 */
   for(;;)
   {
@@ -167,42 +166,28 @@ void Master_Task(void const * argument)
 
     osDelay(500);
 
-    /* 主机读取从机温湿度、光照强度 (中断接收方式) */
+    /* 主机读取从机温湿度、光照强度 (阻塞接收方式) */
     if (Master_ReadSensor() == 0)
     {
-      /* 轮询等待中断接收完成, 超时 1000ms */
-      wait_start = HAL_GetTick();
-      while ((g_master_rx_done == 0) && ((HAL_GetTick() - wait_start) < 1000))
+      /* 解析传感器帧 */
+      if (Master_ParseSensor(g_master_buffer.rx_buf, &g_master_sensor) == 0)
       {
-        osDelay(1);
-      }
-
-      if (g_master_rx_done != 0)
-      {
-        /* 解析传感器帧 */
-        if (Master_ParseSensor(g_master_buffer.rx_buf, &g_master_sensor) == 0)
+        /* 光照合法范围兜底校验 (从机生成范围 0 ~ 999) */
+        if ((g_master_sensor.light >= 0) && (g_master_sensor.light <= 999))
         {
-          /* 光照合法范围兜底校验 (从机生成范围 0 ~ 999) */
-          if ((g_master_sensor.light >= 0) && (g_master_sensor.light <= 999))
-          {
-            printf("[Master] Read Sensor: Temp=%d.%d C, Humi=%d.%d %%, Light=%d lux\r\n",
-                   g_master_sensor.temperature / 10, g_master_sensor.temperature % 10,
-                   g_master_sensor.humidity / 10, g_master_sensor.humidity % 10,
-                   g_master_sensor.light);
-          }
-          else
-          {
-            printf("[Master] Sensor data INVALID, dropped\r\n");
-          }
+          printf("[Master] Read Sensor: Temp=%d.%d C, Humi=%d.%d %%, Light=%d lux\r\n",
+                 g_master_sensor.temperature / 10, g_master_sensor.temperature % 10,
+                 g_master_sensor.humidity / 10, g_master_sensor.humidity % 10,
+                 g_master_sensor.light);
         }
         else
         {
-          printf("[Master] Sensor PARSE ERROR, dropped\r\n");
+          printf("[Master] Sensor data INVALID, dropped\r\n");
         }
       }
       else
       {
-        printf("[Master] Read Sensor TIMEOUT\r\n");
+        printf("[Master] Sensor PARSE ERROR, dropped\r\n");
       }
     }
     else
@@ -226,28 +211,26 @@ void Slave_Task(void const * argument)
 {
   /* USER CODE BEGIN Slave_Task */
 
-  /* Infinite loop: 更新模拟传感器数据, 打印接收到的时间和当前传感器值 */
+  /* Infinite loop: 阻塞式收发循环
+   * 协议顺序与主机匹配: 主机写时间 -> 从机 ReceiveTime
+   *                     主机读传感器 -> 从机 TransmitSensor
+   */
   for(;;)
   {
-    /* 检查并恢复 I2C 监听模式 (处理非 AF 错误) */
-    Slave_RecoverI2C();
-
-    /* 更新从机模拟传感器数据 */
-    Slave_UpdateSensor();
-
-    /* 接收到主机时间数据后, 在任务中解析 (中断只置标志) */
-    if (g_slave_rx_done != 0)
+    /* 1. 阻塞等待主机写入时间数据 */
+    if (Slave_ReceiveTime() == 0)
     {
-      g_slave_rx_done = 0;
       Slave_ParseTime(g_slave_buffer.rx_buf, &g_slave_time);
+      printf("[Slave]  Recv Time: %04u-%02u-%02u %02u:%02u:%02u\r\n",
+             g_slave_time.year, g_slave_time.month, g_slave_time.day,
+             g_slave_time.hour, g_slave_time.minute, g_slave_time.second);
     }
 
-    /* 打印从机接收到的主机时间 */
-    printf("[Slave]  Recv Time: %04u-%02u-%02u %02u:%02u:%02u\r\n",
-           g_slave_time.year, g_slave_time.month, g_slave_time.day,
-           g_slave_time.hour, g_slave_time.minute, g_slave_time.second);
+    /* 2. 更新传感器数据并打包到 tx_buf (供后续发送) */
+    Slave_UpdateSensor();
 
-    osDelay(1000);
+    /* 3. 阻塞等待主机读取传感器数据 */
+    Slave_TransmitSensor();
   }
   /* USER CODE END Slave_Task */
 }

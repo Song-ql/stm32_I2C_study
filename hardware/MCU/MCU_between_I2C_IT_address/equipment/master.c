@@ -7,7 +7,54 @@ volatile uint8_t g_master_rx_done = 0;
 
 SensorData_t g_master_sensor;
 
-/* 将时间数据打包到 tx_buf (小端序)
+/* 主机向指定寄存器地址写入数据 (阻塞方式)
+ * 使用 HAL_I2C_Mem_Write, 总线时序:
+ *   [START][SlaveAddr+W][REG_ADDR][DATA...][STOP]
+ */
+uint8_t Master_WriteReg(uint8_t reg_addr, const uint8_t *data, uint16_t len)
+{
+    HAL_StatusTypeDef status;
+
+    if (len > I2C_MAX_DATA_SIZE)
+    {
+        return 1;
+    }
+
+    status = HAL_I2C_Mem_Write(&hi2c1, BSP_IIC_SLAVE_ADDR_8BIT,
+                               (uint16_t)reg_addr, I2C_MEMADD_SIZE_8BIT,
+                               (uint8_t *)data, len,
+                               BSP_IIC_TIMEOUT);
+
+    return (status == HAL_OK) ? 0 : 1;
+}
+
+/* 主机从指定寄存器地址读取数据 (中断接收方式)
+ * 使用 HAL_I2C_Mem_Read_IT, 总线时序:
+ *   [START][SlaveAddr+W][REG_ADDR][Sr][SlaveAddr+R][DATA...][STOP]
+ * 接收完成后由 HAL_I2C_MemRxCpltCallback 置位 g_master_rx_done。
+ */
+uint8_t Master_ReadReg(uint8_t reg_addr, uint16_t len)
+{
+    HAL_StatusTypeDef status;
+
+    if (len > I2C_MAX_DATA_SIZE)
+    {
+        return 1;
+    }
+
+    g_master_rx_done = 0;
+    status = HAL_I2C_Mem_Read_IT(&hi2c1, BSP_IIC_SLAVE_ADDR_8BIT,
+                                 (uint16_t)reg_addr, I2C_MEMADD_SIZE_8BIT,
+                                 g_master_buffer.rx_buf, len);
+    if (status != HAL_OK)
+    {
+        return 1;
+    }
+
+    return 0;
+}
+
+/* 将时间数据打包到 buf (小端序)
  * 格式: [year_lo][year_hi][month][day][hour][minute][second]
  */
 static void Master_PackTime(uint8_t *buf, const TimeData_t *pTime)
@@ -21,39 +68,22 @@ static void Master_PackTime(uint8_t *buf, const TimeData_t *pTime)
     buf[6] = pTime->second;
 }
 
-/* 主机发送时间到从机 (阻塞方式) */
+/* 主机发送时间到从机 (写 REG_ADDR_TIME, 阻塞方式) */
 uint8_t Master_SendTime(const TimeData_t *pTime)
 {
-    HAL_StatusTypeDef status;
-
     Master_PackTime(g_master_buffer.tx_buf, pTime);
 
-    status = HAL_I2C_Master_Transmit(&hi2c1, BSP_IIC_SLAVE_ADDR_8BIT,
-                                     g_master_buffer.tx_buf,
-                                     sizeof(g_master_buffer.tx_buf),
-                                     BSP_IIC_TIMEOUT);
-
-    return (status == HAL_OK) ? 0 : 1;
+    return Master_WriteReg(REG_ADDR_TIME, g_master_buffer.tx_buf,
+                           sizeof(TimeData_t));
 }
 
-/* 主机读取从机传感器数据 (中断接收方式)
- * 接收完成后由 HAL_I2C_MasterRxCpltCallback 置位 g_master_rx_done,
+/* 主机读取从机传感器数据 (读 REG_ADDR_SENSOR, 中断接收)
+ * 接收完成后由 HAL_I2C_MemRxCpltCallback 置位 g_master_rx_done,
  * 调用方轮询该标志后调用 Master_ParseSensor 解析数据。
  */
 uint8_t Master_ReadSensor(void)
 {
-    HAL_StatusTypeDef status;
-
-    g_master_rx_done = 0;
-    status = HAL_I2C_Master_Receive_IT(&hi2c1, BSP_IIC_SLAVE_ADDR_8BIT,
-                                       g_master_buffer.rx_buf,
-                                       sizeof(g_master_buffer.rx_buf));
-    if (status != HAL_OK)
-    {
-        return 1;
-    }
-
-    return 0;
+    return Master_ReadReg(REG_ADDR_SENSOR, sizeof(SensorData_t));
 }
 
 /* 解析接收到的传感器数据 (小端序)
@@ -68,4 +98,3 @@ uint8_t Master_ParseSensor(const uint8_t *buf, SensorData_t *out)
     out->light       = (int16_t)(buf[4] | ((uint16_t)buf[5] << 8));
     return 0;
 }
-

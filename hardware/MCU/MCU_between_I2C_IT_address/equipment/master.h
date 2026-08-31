@@ -4,11 +4,14 @@
 #include "main.h"
 #include "BSP_IIC.h"
 
-/* 主机数据缓冲区 */
+/* 主机数据缓冲区
+ * tx_buf: 写事务, 格式 [寄存器地址(1)][数据(I2C_MAX_DATA_SIZE)]
+ * rx_buf: 读事务接收数据, 最大 I2C_MAX_DATA_SIZE 字节
+ */
 typedef struct
 {
-    uint8_t tx_buf[I2C_FRAME_SIZE]; /* 发送给从机的时间数据 (7 字节) */
-    uint8_t rx_buf[I2C_SENSOR_DATA_SIZE]; /* 接收从机的传感器数据 */
+    uint8_t tx_buf[I2C_FRAME_SIZE];
+    uint8_t rx_buf[I2C_MAX_DATA_SIZE];
 } MasterBuffer_t;
 
 /* 主机数据缓冲区 */
@@ -20,13 +23,26 @@ extern volatile uint8_t g_master_rx_done;
 /* 主机解析后的传感器数据 */
 extern SensorData_t g_master_sensor;
 
-/* 主机发送时间到从机
+/* 主机向指定寄存器地址写入数据 (阻塞方式)
+ * 参数: reg_addr - 寄存器地址; data - 数据指针; len - 数据长度
+ * 返回: 0 = 成功, 1 = 失败
+ */
+uint8_t Master_WriteReg(uint8_t reg_addr, const uint8_t *data, uint16_t len);
+
+/* 主机从指定寄存器地址读取数据 (中断接收方式)
+ * 参数: reg_addr - 寄存器地址; len - 期望读取的数据长度
+ * 返回: 0 = 成功启动, 1 = 失败
+ * 注意: 需轮询 g_master_rx_done, 完成后数据在 g_master_buffer.rx_buf 中。
+ */
+uint8_t Master_ReadReg(uint8_t reg_addr, uint16_t len);
+
+/* 主机发送时间到从机 (写 REG_ADDR_TIME)
  * 参数: pTime - 时间数据指针
  * 返回: 0 = 成功, 1 = 失败
  */
 uint8_t Master_SendTime(const TimeData_t *pTime);
 
-/* 主机读取从机传感器数据 (中断接收)
+/* 主机读取从机传感器数据 (读 REG_ADDR_SENSOR, 中断接收)
  * 返回: 0 = 成功启动, 1 = 失败
  * 注意: 需轮询 g_master_rx_done, 完成后调用 Master_ParseSensor 解析。
  */

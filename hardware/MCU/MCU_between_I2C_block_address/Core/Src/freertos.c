@@ -53,6 +53,9 @@
 osThreadId MasterTaskHandle;
 osThreadId SlaveTaskHandle;
 
+/* I2C 互斥量: 保护恢复路径, 避免一侧恢复期间另一侧发起事务导致连锁恢复 */
+osMutexId g_i2c_mutex;
+
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
 
@@ -116,6 +119,9 @@ void MX_FREERTOS_Init(void) {
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
+  /* 创建 I2C 互斥量: 保护恢复路径, 避免一侧恢复期间另一侧发起事务 */
+  osMutexDef(i2c_mutex);
+  g_i2c_mutex = osMutexCreate(osMutex(i2c_mutex));
   /* USER CODE END RTOS_THREADS */
 
 }
@@ -166,26 +172,51 @@ void Master_Task(void const * argument)
 
     osDelay(500);
 
-    /* 主机单独读取从机传感器数据 (温度/湿度/光照 各读 2 字节) */
-    if (Master_ReadSensorByAddr() == 0)
+    /* 1. 单独读取温度寄存器 (SLAVE_REG_TEMP, 2 字节) */
+    if (Master_ReadTempByAddr() == 0)
+    {
+      printf("[Master] Read Temp(addr=0x%02X): %d.%d C\r\n",
+             SLAVE_REG_TEMP,
+             g_master_sensor.temperature / 10, g_master_sensor.temperature % 10);
+    }
+    else
+    {
+      printf("[Master] Read Temp FAILED\r\n");
+    }
+
+    osDelay(500);
+
+    /* 2. 单独读取湿度寄存器 (SLAVE_REG_HUMI, 2 字节) */
+    if (Master_ReadHumiByAddr() == 0)
+    {
+      printf("[Master] Read Humi(addr=0x%02X): %d.%d %%\r\n",
+             SLAVE_REG_HUMI,
+             g_master_sensor.humidity / 10, g_master_sensor.humidity % 10);
+    }
+    else
+    {
+      printf("[Master] Read Humi FAILED\r\n");
+    }
+
+    osDelay(500);
+
+    /* 3. 单独读取光照寄存器 (SLAVE_REG_LIGHT, 2 字节) */
+    if (Master_ReadLightByAddr() == 0)
     {
       /* 光照合法范围兜底校验 (从机生成范围 0 ~ 999) */
       if ((g_master_sensor.light >= 0) && (g_master_sensor.light <= 999))
       {
-        printf("[Master] Read Sensor[Individual](addr T=0x%02X H=0x%02X L=0x%02X): Temp=%d.%d C, Humi=%d.%d %%, Light=%d lux\r\n",
-               SLAVE_REG_TEMP, SLAVE_REG_HUMI, SLAVE_REG_LIGHT,
-               g_master_sensor.temperature / 10, g_master_sensor.temperature % 10,
-               g_master_sensor.humidity / 10, g_master_sensor.humidity % 10,
-               g_master_sensor.light);
+        printf("[Master] Read Light(addr=0x%02X): %d lux\r\n",
+               SLAVE_REG_LIGHT, g_master_sensor.light);
       }
       else
       {
-        printf("[Master] Sensor data INVALID, dropped\r\n");
+        printf("[Master] Light data INVALID, dropped\r\n");
       }
     }
     else
     {
-      printf("[Master] Read Sensor FAILED\r\n");
+      printf("[Master] Read Light FAILED\r\n");
     }
 
     osDelay(500);
@@ -204,33 +235,23 @@ void Slave_Task(void const * argument)
 {
   /* USER CODE BEGIN Slave_Task */
 
-  /* Infinite loop: 阻塞式收发循环 (带数据地址)
-   * 协议顺序与主机匹配:
-   *   主机写时间到寄存器          -> 从机 Slave_WriteByAddr (写处理)
-   *   主机单独读取传感器 (各 2 字节) -> 从机 Slave_ReadByAddr (读处理)
-   * 读和写使用独立函数, 互不共用。
+  /* 按寄存器地址派发, 不依赖超时区分 cycle:
+   *   主机写时间 (SLAVE_REG_TIME) -> Slave_ReadByAddr 接收并解析到 g_slave_time,
+   *                                 随后刷新传感器供本轮读取。
+   *   主机读传感器 (TEMP/HUMI/LIGHT) -> Slave_ReadByAddr 内部按需序列化并发送。
+   * Slave_ReadByAddr 返回处理的寄存器地址, 超时/异常返回 0xFF。
    */
   for(;;)
   {
-    /* 1. 阻塞等待主机写入时间数据 (写寄存器) */
-    if (Slave_WriteByAddr() == 0)
+    uint8_t reg = Slave_ReadByAddr();
+
+    if (reg == SLAVE_REG_TIME)
     {
-      /* Slave_WriteByAddr 内部已将寄存器中的时间解析到 g_slave_time */
       printf("[Slave]  Recv Time(addr=0x%02X): %04u-%02u-%02u %02u:%02u:%02u\r\n",
              SLAVE_REG_TIME,
              g_slave_time.year, g_slave_time.month, g_slave_time.day,
              g_slave_time.hour, g_slave_time.minute, g_slave_time.second);
-    }
-
-    /* 2. 更新传感器数据并同步到寄存器 */
-    Slave_UpdateSensor();
-
-    /* 3. 阻塞服务主机的传感器读取请求 (读寄存器)
-     * 主机分三次分别读取温度/湿度/光照 (各 2 字节)。
-     * 退出条件: 主机停止读取, Slave_ReadByAddr 超时返回 1。
-     */
-    while (Slave_ReadByAddr() == 0)
-    {
+      Slave_UpdateSensor();
     }
   }
   /* USER CODE END Slave_Task */

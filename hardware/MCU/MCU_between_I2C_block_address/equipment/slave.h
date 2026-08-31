@@ -11,13 +11,10 @@ extern TimeData_t g_slave_time;
 /* 从机传感器数据 (模拟) */
 extern SensorData_t g_slave_sensor;
 
-/* 从机初始化 */
-void Slave_Init(void);
-
 /* 更新从机模拟传感器数据 (在从机任务中周期调用) */
 void Slave_UpdateSensor(void);
 
-/* 从机带地址数据处理 */
+/* 从机带地址数据处理: 返回处理的寄存器地址, 超时/异常返回 0xFF */
 uint8_t Slave_ReadByAddr(void);
 
 #endif

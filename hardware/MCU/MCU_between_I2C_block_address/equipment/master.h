@@ -23,10 +23,19 @@ extern SensorData_t g_master_sensor;
  */
 uint8_t Master_SendTimeByAddr(const TimeData_t *pTime);
 
-/* 主机带地址读取从机传感器数据 (单独读取方式)
- * 分别读取温度/湿度/光照各 2 字节, 结果组装到 g_master_sensor。
+/* 主机单独读取温度寄存器 (SLAVE_REG_TEMP, 2 字节)
  * 返回: 0 = 成功, 1 = 失败
  */
-uint8_t Master_ReadSensorByAddr(void);
+uint8_t Master_ReadTempByAddr(void);
+
+/* 主机单独读取湿度寄存器 (SLAVE_REG_HUMI, 2 字节)
+ * 返回: 0 = 成功, 1 = 失败
+ */
+uint8_t Master_ReadHumiByAddr(void);
+
+/* 主机单独读取光照强度寄存器 (SLAVE_REG_LIGHT, 2 字节)
+ * 返回: 0 = 成功, 1 = 失败
+ */
+uint8_t Master_ReadLightByAddr(void);
 
 #endif

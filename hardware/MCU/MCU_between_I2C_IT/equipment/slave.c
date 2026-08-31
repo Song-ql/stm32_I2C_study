@@ -36,24 +36,20 @@ void Slave_RecoverI2C(void)
  */
 void Slave_UpdateSensor(void)
 {
-    uint32_t tick;
-
     /* I2C 正在向主机发送 tx_buf 时跳过本次更新, 避免传输中改写数据 */
     if (hi2c2.State == HAL_I2C_STATE_BUSY_TX_LISTEN)
     {
         return;
     }
 
-    tick = HAL_GetTick();
+    /* 温度 */
+    g_slave_sensor.temperature = 200;
 
-    /* 温度: 20.0 ~ 30.0 °C (x10 -> 200 ~ 300) */
-    g_slave_sensor.temperature = (int16_t)(200 + (tick % 101));
+    /* 湿度 */
+    g_slave_sensor.humidity = 400;
 
-    /* 湿度: 40.0 ~ 60.0 % (x10 -> 400 ~ 600) */
-    g_slave_sensor.humidity = (int16_t)(400 + ((tick / 7) % 201));
-
-    /* 光照强度: 0 ~ 999 lux */
-    g_slave_sensor.light = (int16_t)((tick * 13) % 1000);
+    /* 光照强度 */
+    g_slave_sensor.light = 1000;
 
     /* 打包到发送缓冲区, 供主机读事务直接发送 */
     Slave_PackSensor(&g_slave_sensor, g_slave_buffer.tx_buf);

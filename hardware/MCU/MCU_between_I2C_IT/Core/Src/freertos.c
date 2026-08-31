@@ -148,23 +148,6 @@ void Master_Task(void const * argument)
       printf("[Master] Send Time FAILED\r\n");
     }
 
-    /* 时间自增 (每秒 +1 秒, 简化处理) */
-    master_time.second++;
-    if (master_time.second >= 60)
-    {
-      master_time.second = 0;
-      master_time.minute++;
-      if (master_time.minute >= 60)
-      {
-        master_time.minute = 0;
-        master_time.hour++;
-        if (master_time.hour >= 24)
-        {
-          master_time.hour = 0;
-        }
-      }
-    }
-
     osDelay(500);
 
     /* 主机读取从机温湿度、光照强度 (中断接收方式) */
@@ -182,18 +165,10 @@ void Master_Task(void const * argument)
         /* 解析传感器帧 */
         if (Master_ParseSensor(g_master_buffer.rx_buf, &g_master_sensor) == 0)
         {
-          /* 光照合法范围兜底校验 (从机生成范围 0 ~ 999) */
-          if ((g_master_sensor.light >= 0) && (g_master_sensor.light <= 999))
-          {
             printf("[Master] Read Sensor: Temp=%d.%d C, Humi=%d.%d %%, Light=%d lux\r\n",
                    g_master_sensor.temperature / 10, g_master_sensor.temperature % 10,
                    g_master_sensor.humidity / 10, g_master_sensor.humidity % 10,
                    g_master_sensor.light);
-          }
-          else
-          {
-            printf("[Master] Sensor data INVALID, dropped\r\n");
-          }
         }
         else
         {

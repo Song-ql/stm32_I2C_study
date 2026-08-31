@@ -4,6 +4,7 @@
 #include "main.h"
 #include "BSP_IIC.h"
 #include "i2c.h"
+#include "BSP_UART.h"
 
 /* 从机数据缓冲区 */
 typedef struct

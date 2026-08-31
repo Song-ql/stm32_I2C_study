@@ -172,23 +172,6 @@ void Master_Task(void const * argument)
       printf("[Master] Send Time FAILED\r\n");
     }
 
-    /* 时间自增 (每秒 +1 秒, 简化处理) */
-    master_time.second++;
-    if (master_time.second >= 60)
-    {
-      master_time.second = 0;
-      master_time.minute++;
-      if (master_time.minute >= 60)
-      {
-        master_time.minute = 0;
-        master_time.hour++;
-        if (master_time.hour >= 24)
-        {
-          master_time.hour = 0;
-        }
-      }
-    }
-
     osDelay(500);
 
     /* 主机读取从机温湿度、光照强度 (DMA接收方式) */
@@ -259,13 +242,9 @@ void Slave_Task(void const * argument)
     }
 
     /* 打印从机接收到的主机时间 */
-    printf("[Slave]  Recv Time: %04u-%02u-%02u %02u:%02u:%02u | "
-           "Temp=%d.%d C, Humi=%d.%d %%, Light=%d lux\r\n",
+    printf("[Slave]  Recv Time: %04u-%02u-%02u %02u:%02u:%02u",
            g_slave_time.year, g_slave_time.month, g_slave_time.day,
-           g_slave_time.hour, g_slave_time.minute, g_slave_time.second,
-           g_slave_sensor.temperature / 10, g_slave_sensor.temperature % 10,
-           g_slave_sensor.humidity / 10, g_slave_sensor.humidity % 10,
-           g_slave_sensor.light);
+           g_slave_time.hour, g_slave_time.minute, g_slave_time.second);
 
     osDelay(1000);
   }

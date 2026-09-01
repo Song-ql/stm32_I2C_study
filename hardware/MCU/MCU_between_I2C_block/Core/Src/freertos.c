@@ -155,18 +155,10 @@ void Master_Task(void const * argument)
       /* 解析传感器帧 */
       if (Master_ParseSensor(g_master_buffer.rx_buf, &g_master_sensor) == 0)
       {
-        /* 光照合法范围兜底校验 (从机生成范围 0 ~ 999) */
-        if ((g_master_sensor.light >= 0) && (g_master_sensor.light <= 999))
-        {
-          printf("[Master] Read Sensor: Temp=%d.%d C, Humi=%d.%d %%, Light=%d lux\r\n",
-                 g_master_sensor.temperature / 10, g_master_sensor.temperature % 10,
-                 g_master_sensor.humidity / 10, g_master_sensor.humidity % 10,
-                 g_master_sensor.light);
-        }
-        else
-        {
-          printf("[Master] Sensor data INVALID, dropped\r\n");
-        }
+        printf("[Master] Read Sensor: Temp=%d.%d C, Humi=%d.%d %%, Light=%d lux\r\n",
+                g_master_sensor.temperature / 10, g_master_sensor.temperature % 10,
+                g_master_sensor.humidity / 10, g_master_sensor.humidity % 10,
+                g_master_sensor.light);
       }
       else
       {

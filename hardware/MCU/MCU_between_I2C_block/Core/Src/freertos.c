@@ -131,7 +131,7 @@ void MX_FREERTOS_Init(void) {
 void Master_Task(void const * argument)
 {
   /* USER CODE BEGIN Master_Task */
-	TimeData_t master_time = {2026, 8, 27, 12, 0, 0};
+	
   /* Infinite loop: 周期性发送时间到从机, 并读取从机传感器数据 */
   for(;;)
   {
@@ -145,23 +145,6 @@ void Master_Task(void const * argument)
     else
     {
       printf("[Master] Send Time FAILED\r\n");
-    }
-
-    /* 时间自增 (每秒 +1 秒, 简化处理) */
-    master_time.second++;
-    if (master_time.second >= 60)
-    {
-      master_time.second = 0;
-      master_time.minute++;
-      if (master_time.minute >= 60)
-      {
-        master_time.minute = 0;
-        master_time.hour++;
-        if (master_time.hour >= 24)
-        {
-          master_time.hour = 0;
-        }
-      }
     }
 
     osDelay(500);

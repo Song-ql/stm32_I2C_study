@@ -14,6 +14,9 @@ typedef struct
 /* 主机数据缓冲区 */
 extern MasterBuffer_t g_master_buffer;
 
+/* 主机时间数据 */
+extern TimeData_t master_time;
+
 /* 主机解析后的传感器数据 */
 extern SensorData_t g_master_sensor;
 

@@ -18,14 +18,8 @@ extern SlaveBuffer_t g_slave_buffer;
 /* 从机接收到的时间 */
 extern TimeData_t g_slave_time;
 
-/* 从机传感器数据 (模拟) */
+/* 从机传感器数据 */
 extern SensorData_t g_slave_sensor;
-
-/* 从机初始化 */
-void Slave_Init(void);
-
-/* 从机 I2C 错误恢复 (阻塞式无需恢复, 保留为空操作) */
-void Slave_RecoverI2C(void);
 
 /* 从机阻塞接收主机写入的时间数据
  * 返回: 0 = 成功, 1 = 失败/超时

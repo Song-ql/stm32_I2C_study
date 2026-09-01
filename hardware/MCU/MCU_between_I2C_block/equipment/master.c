@@ -1,9 +1,15 @@
 #include "master.h"
 #include "i2c.h"
 
+/* 主机数据缓冲区 */
 MasterBuffer_t g_master_buffer;
 
-SensorData_t g_master_sensor;
+/* 主机时间数据 */
+TimeData_t master_time = {2026, 8, 27, 12, 0, 0};
+
+/* 主机解析后的传感器数据 */
+SensorData_t g_master_sensor = {0};
+
 
 /* 将时间数据打包到 tx_buf (小端序)
  * 格式: [year_lo][year_hi][month][day][hour][minute][second]

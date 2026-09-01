@@ -28,10 +28,7 @@ typedef struct
     uint8_t  second;
 } TimeData_t;   /* 共 7 字节 */
 
-/* 传感器数据结构 (主机读取从机)
- * 温度/湿度 放大 10 倍存储, 例如 25.5°C -> 255, 60.5% -> 605
- * 光照强度 单位 lux
- */
+/* 传感器数据结构 (主机读取从机) */
 typedef struct
 {
     int16_t  temperature;   /* 温度 x10, 单位 0.1°C */

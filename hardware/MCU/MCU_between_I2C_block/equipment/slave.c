@@ -1,27 +1,14 @@
 #include "slave.h"
 #include "BSP_UART.h"
 
+/* 从机数据缓冲区 */
 SlaveBuffer_t g_slave_buffer;
 
-TimeData_t g_slave_time = {2026, 1, 1, 0, 0, 0};
+/* 从机时间数据 */
+TimeData_t g_slave_time = {0};
+
+/* 从机传感器数据 */
 SensorData_t g_slave_sensor = {250, 500, 300};
-
-/* 从机初始化: 阻塞式收发, 不使用监听模式
- * 预打包传感器数据, 确保主机首次读取前 tx_buf 有效。
- * 收发由 Slave_Task 循环调用 HAL_I2C_Slave_Receive / HAL_I2C_Slave_Transmit 完成。
- */
-void Slave_Init(void)
-{
-    /* 预打包传感器数据, 确保主机首次读取前 tx_buf 有效 */
-    Slave_PackSensor(&g_slave_sensor, g_slave_buffer.tx_buf);
-}
-
-/* 从机 I2C 错误恢复 (阻塞式无需恢复监听, 保留为空操作以兼容任务调用)
- * 阻塞式收发中, 超时或错误由 HAL 函数返回值处理, 无需额外恢复。
- */
-void Slave_RecoverI2C(void)
-{
-}
 
 /* 从机阻塞接收主机写入的时间数据
  * 返回: 0 = 成功, 1 = 失败/超时
@@ -59,31 +46,27 @@ uint8_t Slave_TransmitSensor(void)
  */
 void Slave_UpdateSensor(void)
 {
-    uint32_t tick;
-
     /* I2C 正在向主机发送 tx_buf 时跳过本次更新, 避免传输中改写数据 */
     if (hi2c2.State == HAL_I2C_STATE_BUSY_TX)
     {
         return;
     }
 
-    tick = HAL_GetTick();
+    /* 温度 */
+    g_slave_sensor.temperature = 200;
 
-    /* 温度: 20.0 ~ 30.0 °C (x10 -> 200 ~ 300) */
-    g_slave_sensor.temperature = (int16_t)(200 + (tick % 101));
+    /* 湿度 */
+    g_slave_sensor.humidity = 400;
 
-    /* 湿度: 40.0 ~ 60.0 % (x10 -> 400 ~ 600) */
-    g_slave_sensor.humidity = (int16_t)(400 + ((tick / 7) % 201));
-
-    /* 光照强度: 0 ~ 999 lux */
-    g_slave_sensor.light = (int16_t)((tick * 13) % 1000);
+    /* 光照强度 */
+    g_slave_sensor.light = 1000;
 
     /* 打包到发送缓冲区, 供主机读事务直接发送 */
     Slave_PackSensor(&g_slave_sensor, g_slave_buffer.tx_buf);
-		printf("[Slave] Send Sensor: Temp=%d.%d C, Humi=%d.%d %%, Light=%d lux\r\n",
-					 g_slave_sensor.temperature / 10, g_slave_sensor.temperature % 10,
-           g_slave_sensor.humidity / 10, g_slave_sensor.humidity % 10,
-           g_slave_sensor.light);
+    printf("[Slave] Send Sensor: Temp=%d.%d C, Humi=%d.%d %%, Light=%d lux\r\n",
+            g_slave_sensor.temperature / 10, g_slave_sensor.temperature % 10,
+            g_slave_sensor.humidity / 10, g_slave_sensor.humidity % 10,
+            g_slave_sensor.light);
 }
 
 /* 将时间数据从 buf 解析到 out (小端序)
